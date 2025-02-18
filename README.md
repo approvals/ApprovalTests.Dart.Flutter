@@ -108,7 +108,7 @@ Add the following to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  approval_tests_flutter: ^1.1.0
+  approval_tests_flutter: ^1.1.6
 ```
 
 ## 👀 Getting Started

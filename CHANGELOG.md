@@ -1,3 +1,6 @@
+## 1.1.6
+- Upgraded all dependencies to actuals.
+
 ## 1.1.3
 - Updated README.md file: fix links.
 
