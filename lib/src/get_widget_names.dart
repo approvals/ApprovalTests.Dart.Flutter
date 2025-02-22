@@ -21,7 +21,8 @@ Future<Set<String>> getWidgetNames() async {
       });
     } else {
       final libPath = '${Directory.current.absolute.path}/lib';
-      stdout.write("package:approved: searching for class names in $libPath...");
+      stdout
+          .write("package:approved: searching for class names in $libPath...");
       extractWidgetNames(libPath).then((widgetsList) {
         if (!_widgetNamesDir.existsSync()) {
           _widgetNamesDir.createSync();
@@ -67,12 +68,16 @@ Future<Set<String>> extractWidgetNames(String libPath) async {
   final classNames = <String>{};
   final libDirectory = Directory(libPath);
   final dartFiles = libDirectory.listSync(recursive: true).where(
-        (file) => file.path.endsWith('.dart') && !file.path.contains('.g.dart') && !file.path.contains('.freezed.dart'),
+        (file) =>
+            file.path.endsWith('.dart') &&
+            !file.path.contains('.g.dart') &&
+            !file.path.contains('.freezed.dart'),
       );
 
   for (final file in dartFiles) {
     final analysisSession = analysisContext.currentSession;
-    final parsedResult = analysisSession.getParsedUnit(file.path) as ParsedUnitResult;
+    final parsedResult =
+        analysisSession.getParsedUnit(file.path) as ParsedUnitResult;
 
     for (final member in parsedResult.unit.declarations) {
       if (member is ClassDeclaration) {
@@ -96,7 +101,8 @@ Future<String> getFlutterSdkPath() async {
       throw Exception('Failed to run flutter command: ${result.stderr}');
     }
 
-    final jsonData = jsonDecode(result.stdout.toString()) as Map<String, dynamic>;
+    final jsonData =
+        jsonDecode(result.stdout.toString()) as Map<String, dynamic>;
 
     completer.complete(jsonData['flutterRoot'].toString());
   });
@@ -112,7 +118,9 @@ Future<Set<String>> readWidgetsFile(String filePath) async {
     // Split by lines
     final linesList = text.split('\n');
     // Remove empty lines and comments
-    final linesSet = linesList.where((line) => line.isNotEmpty && !line.startsWith('#')).toSet();
+    final linesSet = linesList
+        .where((line) => line.isNotEmpty && !line.startsWith('#'))
+        .toSet();
     completer.complete(linesSet);
   });
 
@@ -126,7 +134,9 @@ Future<bool> isWidgetNamesFileFresh() async {
 
   await findNewestDartFileTimestamp(libDirectory).then((dateTime) {
     final widgetNamesFile = File(_widgetNamesPath);
-    if (dateTime != null && widgetNamesFile.existsSync() && widgetNamesFile.lastModifiedSync().isAfter(dateTime)) {
+    if (dateTime != null &&
+        widgetNamesFile.existsSync() &&
+        widgetNamesFile.lastModifiedSync().isAfter(dateTime)) {
       resultCompleter.complete(true);
     } else {
       resultCompleter.complete(false);
