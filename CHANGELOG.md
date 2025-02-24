@@ -1,3 +1,6 @@
+## 1.2.0
+- `ContextLocator` replaced by `AnalysisContextCollection`
+
 ## 1.1.6
 - Upgraded all dependencies to actuals.
 
