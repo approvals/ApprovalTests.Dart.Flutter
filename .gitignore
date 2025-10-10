@@ -40,3 +40,5 @@ generated_*
 # Other files
 .old.dart
 .DS_Store
+example/flutter_example/pubspec.lock
+example/flutter_example/.metadata
