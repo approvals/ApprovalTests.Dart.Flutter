@@ -1,3 +1,9 @@
+## Unreleased
+- Fixed `loadWidgetNames` to return an empty string when the widget cache file is missing, avoiding `LateInitializationError`.
+- Restored intl reverse-lookup loading by re-enabling JSON parsing in `loadEnStringReverseLookup`.
+- Updated `WidgetMeta.hashCode` to match its equality semantics, ensuring set/map deduplication works as intended.
+- Added regression tests covering widget name loading, intl reverse lookup, and `WidgetMeta` equality.
+
 ## 1.2.0
 - `ContextLocator` replaced by `AnalysisContextCollection`
 

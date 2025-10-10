@@ -84,7 +84,7 @@ Suppose you wanted to confirm that a page loaded with all the widget you expecte
 perform an approval test by calling `tester.approvalTest`, and give your test a suitable name:
 
 ```dart
-    testWidget('home page', () {
+    testWidgets('home page', (WidgetTester tester) async {
         await tester.pumpWidget(const MyApp());
         await tester.pumpAndSettle();
 
@@ -93,12 +93,12 @@ perform an approval test by calling `tester.approvalTest`, and give your test a 
 ```
 
 To include your project's custom widget types in your test, and to perform post-test checks, add 
-calls to `Approved.setUpAll()` to your tests' `setUpAll` calls, like so:
+calls to `ApprovalWidgets.setUpAll()` to your tests' `setUpAll` calls, like so:
 
 ```dart
     main() {
-        setUpAll(() {
-            Approved.setUpAll();
+        setUpAll(() async {
+            await ApprovalWidgets.setUpAll();
         });
     }
 ```
