@@ -45,12 +45,11 @@ Future<Set<String>> getWidgetNames() async {
 }
 
 String loadWidgetNames() {
-  late String result;
   final widgetNamesFile = File(_widgetNamesPath);
-  if (widgetNamesFile.existsSync()) {
-    result = widgetNamesFile.readAsStringSync();
+  if (!widgetNamesFile.existsSync()) {
+    return '';
   }
-  return result;
+  return widgetNamesFile.readAsStringSync();
 }
 
 /// Crawls the project and extracts widget names.

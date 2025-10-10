@@ -34,7 +34,11 @@ class WidgetMeta {
   }
 
   @override
-  int get hashCode => widget.hashCode;
+  int get hashCode => Object.hash(
+        keyString,
+        widgetText,
+        widgetType,
+      );
 
   final Widget widget;
   late KeyType keyType;
