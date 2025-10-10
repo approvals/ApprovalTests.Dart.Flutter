@@ -42,9 +42,9 @@ Future<void> Function(String?, String, Options?) _globalApprovalTest =
             reporter: options.reporter,
             deleteReceivedFile: options.deleteReceivedFile,
             namer: Namer(
-              filePath: options.namer?.filePath,
-              options: options.namer?.options,
-              addTestName: options.namer?.addTestName ?? true,
+              filePath: options.namer.filePath,
+              options: options.namer.options,
+              addTestName: options.namer.addTestName,
               description: description,
             ),
             logErrors: options.logErrors,
