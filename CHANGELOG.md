@@ -3,6 +3,7 @@
 - Restored intl reverse-lookup loading by re-enabling JSON parsing in `loadEnStringReverseLookup`.
 - Updated `WidgetMeta.hashCode` to match its equality semantics, ensuring set/map deduplication works as intended.
 - Added regression tests covering widget name loading, intl reverse lookup, and `WidgetMeta` equality.
+- Declared an upper bound on the supported Dart SDK (`<4.0.0`) to satisfy pub publishing requirements.
 - `ContextLocator` replaced by `AnalysisContextCollection`
 
 ## 1.1.6
