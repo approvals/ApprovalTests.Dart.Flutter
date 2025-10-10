@@ -1,6 +1,6 @@
 name: approval_tests_flutter
 description: Approval Tests implementation in Dart (Flutter). Inspired by ApprovalTests.
-version: 1.1.6
+version: 1.2.0
 repository: https://github.com/approvals/ApprovalTests.Flutter
 homepage: https://github.com/approvals/ApprovalTests.Flutter.git
 issue_tracker: https://github.com/approvals/ApprovalTests.Flutter/issues
