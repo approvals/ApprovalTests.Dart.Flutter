@@ -1,30 +1,41 @@
-// ignore: prefer_expression_function_bodies
-Future<Map<String, List<String>>> loadEnStringReverseLookup(String path) async {
-  return <String, List<String>>{};
-  /* Rich, delete
-  Future<String> loadData() async {
-    final File file = File(path);
-    return file.readAsStringSync();
+import 'dart:convert';
+import 'dart:io';
+
+Future<Map<String, List<String>>> loadEnStringReverseLookup(
+  String path,
+) async {
+  final file = File(path);
+  if (!await file.exists()) {
+    throw FileSystemException(
+      'intl reverse-lookup file not found',
+      path,
+    );
   }
 
-  final String enString = await loadData();
-
+  final enString = await file.readAsString();
   final enStringScrubbed = _removeNonJsonCharacters(enString);
-
-  final enMap = jsonDecode(enStringScrubbed) as Map<String, dynamic>;
+  final dynamic parsedJson = jsonDecode(enStringScrubbed);
+  if (parsedJson is! Map<String, dynamic>) {
+    throw FormatException(
+      'intl reverse-lookup file must decode to a JSON object',
+      path,
+    );
+  }
 
   final enReverseLookup = <String, List<String>>{};
-
-  enMap.forEach(
-    (key, value) => addToReverseLookup(
-      reverseLookupMap: enReverseLookup,
-      stringId: key,
-      stringContent: value as String,
-    ),
+  parsedJson.forEach(
+    (key, value) {
+      if (value is String) {
+        addToReverseLookup(
+          reverseLookupMap: enReverseLookup,
+          stringId: key,
+          stringContent: value,
+        );
+      }
+    },
   );
 
   return enReverseLookup;
-   */
 }
 
 void addToReverseLookup({
@@ -46,4 +57,14 @@ void addToReverseLookup({
     }
     reverseLookupMap[valueUpperCase]?.add('$stringId.toUpperCase()');
   }
+}
+
+String _removeNonJsonCharacters(String text) {
+  final trimmedText = text.trim();
+  final startIndex = trimmedText.indexOf('{');
+  final endIndex = trimmedText.lastIndexOf('}');
+  if (startIndex == -1 || endIndex == -1 || endIndex < startIndex) {
+    return trimmedText;
+  }
+  return trimmedText.substring(startIndex, endIndex + 1);
 }

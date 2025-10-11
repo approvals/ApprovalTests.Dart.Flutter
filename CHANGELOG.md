@@ -1,4 +1,13 @@
-## 1.2.0
+## 1.3.1
+- Fixed `loadWidgetNames` to return an empty string when the widget cache file is missing, avoiding `LateInitializationError`.
+- Restored intl reverse-lookup loading by re-enabling JSON parsing in `loadEnStringReverseLookup`.
+- Updated `WidgetMeta.hashCode` to match its equality semantics, ensuring set/map deduplication works as intended.
+- Added regression tests covering widget name loading, intl reverse lookup, and `WidgetMeta` equality.
+- Declared an upper bound on the supported Dart SDK (`<4.0.0`) to satisfy pub publishing requirements.
+- Added explicit platform support metadata (Android, iOS, Linux, macOS, Windows) so pub scoring can detect supported platforms.
+- Replaced the bundled license text with the standard Apache 2.0 wording recognized by pub.dev.
+- Added a minimal `example/main.dart` showcasing a widget approval test.
+- Updated dependency constraints (for example `approval_tests` now targets 1.3.3) to stay aligned with upstream packages.
 - `ContextLocator` replaced by `AnalysisContextCollection`
 
 ## 1.1.6

@@ -34,7 +34,11 @@ class WidgetMeta {
   }
 
   @override
-  int get hashCode => widget.hashCode;
+  int get hashCode => Object.hash(
+        keyString,
+        widgetText,
+        widgetType,
+      );
 
   final Widget widget;
   late KeyType keyType;
@@ -45,7 +49,7 @@ class WidgetMeta {
   /// Text value of the key scraped from the widget tree and trimmed
   late final String keyString;
 
-  /// Text value of the widget if a Text widget or similar. E.g., Text(<widgetText>);
+  /// Text value of the widget if a Text widget or similar. E.g., `Text(widgetText)`.
   late final String widgetText;
 
   /// The type of widget

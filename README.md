@@ -1,6 +1,6 @@
 <div align="center">
 <p align="center">
-    <a href="https://github.com/approvals/ApprovalTests.Dart" align="center">
+    <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter" align="center">
         <img src="https://github.com/yelmuratoff/packages_assets/blob/main/assets/approval_tests/approval_tests_flutter.png?raw=true" width="400px">
     </a>
 </p>
@@ -9,11 +9,11 @@
 <h2 align="center"> Approval Tests implementation in Flutter 🚀 </h2>
 <br>
 <p align="center">
-  <a href="https://app.codecov.io/gh/approvals/ApprovalTests.Dart"><img src="https://codecov.io/gh/approvals/ApprovalTests.Dart/branch/main/graph/badge.svg" alt="codecov"></a>
+  <a href="https://app.codecov.io/gh/approvals/ApprovalTests.Dart.Flutter"><img src="https://codecov.io/gh/approvals/ApprovalTests.Dart.Flutter/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://pub.dev/packages/approval_tests_flutter"><img src="https://img.shields.io/pub/v/approval_tests_flutter.svg" alt="Pub"></a>
   <a href="https://www.apache.org/licenses/"><img src="https://img.shields.io/badge/license-APACHE-blue.svg" alt="License: APACHE"></a>
-  <!-- <a href="https://github.com/approvals/ApprovalTests.Dart"><img src="https://hits.dwyl.com/approvals/ApprovalTests.Dart.svg?style=flat" alt="Repository views"></a> -->
-  <a href="https://github.com/approvals/ApprovalTests.Dart"><img src="https://img.shields.io/github/stars/approvals/ApprovalTests.Dart?style=social" alt="Stars"></a>
+  <!-- <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter"><img src="https://hits.dwyl.com/approvals/ApprovalTests.Dart.Flutter.svg?style=flat" alt="Repository views"></a> -->
+  <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter"><img src="https://img.shields.io/github/stars/approvals/ApprovalTests.Dart.Flutter?style=social" alt="Stars"></a>
 </p>
 <p align="center">
   <a href="https://pub.dev/packages/approval_tests_flutter/score"><img src="https://img.shields.io/pub/likes/approval_tests_flutter?logo=flutter" alt="Pub likes"></a>
@@ -21,9 +21,9 @@
   <a href="https://pub.dev/packages/approval_tests_flutter/score"><img src="https://img.shields.io/pub/points/approval_tests_flutter?logo=flutter" alt="Pub points"></a>
 </p>
 <!-- <p align="center">
-  <a href="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/build_and_test.yml"><img src="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/build_and_test.yml/badge.svg" alt="Build and test badge"></a>
-  <a href="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/publish.yml"><img src="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/publish.yml/badge.svg" alt="Deploy and Create Release"></a>
-  <a href="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/mdsnippets.yml"><img src="https://github.com/approvals/ApprovalTests.Dart/actions/workflows/mdsnippets.yml/badge.svg" alt="mdsnippets"></a>
+  <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/build_and_test.yml"><img src="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/build_and_test.yml/badge.svg" alt="Build and test badge"></a>
+  <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/publish.yml"><img src="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/publish.yml/badge.svg" alt="Deploy and Create Release"></a>
+  <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/mdsnippets.yml"><img src="https://github.com/approvals/ApprovalTests.Dart.Flutter/actions/workflows/mdsnippets.yml/badge.svg" alt="mdsnippets"></a>
 </p> -->
 
 ## 📖 About
@@ -44,7 +44,7 @@ ApprovalTests is designed for two level: Dart and Flutter. <br>
 | Package | Version | Description | 
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [approval_tests](https://github.com/approvals/ApprovalTests.Dart/tree/main/packages/approval_tests) | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests *(main)* |
-| [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart/tree/main/packages/approval_tests_flutter) | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter) | **Flutter** package for approval testing of `widget`, `integration` tests |
+| [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart.Flutter) | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter) | **Flutter** package for approval testing of `widget`, `integration` tests |
 
 
 ## 📋 How it works
@@ -84,7 +84,7 @@ Suppose you wanted to confirm that a page loaded with all the widget you expecte
 perform an approval test by calling `tester.approvalTest`, and give your test a suitable name:
 
 ```dart
-    testWidget('home page', () {
+    testWidgets('home page', (WidgetTester tester) async {
         await tester.pumpWidget(const MyApp());
         await tester.pumpAndSettle();
 
@@ -93,12 +93,12 @@ perform an approval test by calling `tester.approvalTest`, and give your test a 
 ```
 
 To include your project's custom widget types in your test, and to perform post-test checks, add 
-calls to `Approved.setUpAll()` to your tests' `setUpAll` calls, like so:
+calls to `ApprovalWidgets.setUpAll()` to your tests' `setUpAll` calls, like so:
 
 ```dart
     main() {
-        setUpAll(() {
-            Approved.setUpAll();
+        setUpAll(() async {
+            await ApprovalWidgets.setUpAll();
         });
     }
 ```
@@ -108,13 +108,13 @@ Add the following to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  approval_tests_flutter: ^1.2.0
+  approval_tests_flutter: ^1.3.1
 ```
 
 ## 👀 Getting Started
 
 The best way to get started is to download and open the example project:
-* [Flutter example project](https://github.com/approvals/ApprovalTests.Dart/tree/main/examples/flutter_example)
+* [Flutter example project](https://github.com/approvals/ApprovalTests.Dart.Flutter/tree/main/example/flutter_example)
 
 ## 📚 How to use
 
@@ -334,18 +334,18 @@ Prefer learning by listening? Then you might enjoy the following podcasts:
 
 ## Coverage
 
-[![](https://codecov.io/gh/approvals/ApprovalTests.Dart/branch/main/graphs/sunburst.svg)](https://codecov.io/gh/approvals/ApprovalTests.Dart/branch/main)
+[![](https://codecov.io/gh/approvals/ApprovalTests.Dart.Flutter/branch/main/graphs/sunburst.svg)](https://codecov.io/gh/approvals/ApprovalTests.Dart.Flutter/branch/main)
 
 ## 🤝 Contributing
-Show some 💙 and <a href="https://github.com/approvals/ApprovalTests.Dart.git">star the repo</a> to support the project! 🙌   
+Show some 💙 and <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter">star the repo</a> to support the project! 🙌   
 The project is in the process of development and we invite you to contribute through pull requests and issue submissions. 👍   
 We appreciate your support. 🫰
 
 <br><br>
 <div align="center" >
   <p>Thanks to all contributors of this package</p>
-  <a href="https://github.com/approvals/ApprovalTests.Dart/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=approvals/ApprovalTests.Dart" />
+  <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=approvals/ApprovalTests.Dart.Flutter" />
   </a>
 </div>
 <br>
