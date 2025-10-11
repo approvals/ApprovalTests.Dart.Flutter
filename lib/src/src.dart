@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 Set<String>? _widgetNames;
 
+/// Top-level helpers for configuring approval-based widget tests.
 class ApprovalWidgets {
+  /// File path extractor used when building widget approval namers.
   static const FilePathExtractor filePathExtractor =
       FilePathExtractor(stackTraceFetcher: StackTraceFetcher());
 
@@ -26,6 +28,7 @@ class ApprovalWidgets {
     return completer.future;
   }
 
+  /// Cached set of project widget names discovered during [setUpAll].
   static Set<String>? get widgetNames => _widgetNames;
 }
 
