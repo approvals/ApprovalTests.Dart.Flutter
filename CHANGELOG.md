@@ -1,3 +1,8 @@
+## 1.3.2
+- Raised the `analyzer` constraint to `>=12.0.0 <14.0.0` to resolve a version conflict with `flutter_test` on current Flutter/Dart SDKs, whose pinned `test`/`test_api` require analyzer 12+.
+- Migrated widget-name extraction to the analyzer 12 AST API (`ClassDeclaration.namePart.typeName`), replacing the removed `name` token getter.
+- Note: this drops support for analyzer 8–11 (older Flutter SDKs).
+
 ## 1.3.1
 - Fixed `loadWidgetNames` to return an empty string when the widget cache file is missing, avoiding `LateInitializationError`.
 - Restored intl reverse-lookup loading by re-enabling JSON parsing in `loadEnStringReverseLookup`.
