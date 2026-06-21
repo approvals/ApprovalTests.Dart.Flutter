@@ -80,7 +80,7 @@ Future<Set<String>> extractWidgetNames(String libPath) async {
 
     for (final member in parsedResult.unit.declarations) {
       if (member is ClassDeclaration) {
-        final name = member.name.value().toString();
+        final name = member.namePart.typeName.lexeme;
         if (!name.startsWith('_')) {
           classNames.add(name);
         }
