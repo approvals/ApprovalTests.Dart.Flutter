@@ -31,11 +31,15 @@ build/
 # Coverage
 coverage/
 
-# Codegen 
+# Codegen
 *.*.dart
 *.g.dart
 *.received.*
 generated_*
+
+# Approval Tests generated cache (class_names.txt, received_files.txt).
+# Approved snapshots live next to their tests and are committed; these are not.
+**/.approval_tests/
 
 # Other files
 .old.dart

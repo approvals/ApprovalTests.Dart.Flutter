@@ -1,12 +1,14 @@
-// ignore_for_file: avoid_print
-
-import 'dart:async';
-
 import 'package:approval_tests/approval_tests.dart';
 import 'package:approval_tests_flutter/src/get_widget_names.dart';
 import 'package:approval_tests_flutter/src/widget_meta/collect_widgets_meta_data.dart'
     as widgets_meta_data;
+import 'package:approval_tests_flutter/src/widget_meta/semantics_snapshot.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+export 'package:approval_tests_flutter/src/widget_meta/register_types.dart'
+    show registerTypes;
+export 'package:approval_tests_flutter/src/widget_meta/widget_tester_extension.dart';
 
 Set<String>? _widgetNames;
 
@@ -16,107 +18,131 @@ class ApprovalWidgets {
   static const FilePathExtractor filePathExtractor =
       FilePathExtractor(stackTraceFetcher: StackTraceFetcher());
 
-  /// Initializes the approval test by building a database of project classes.
+  /// Builds a database of the project's class names so approval tests can match
+  /// widgets by their custom type.
   ///
-  /// Typically called from within flutter_tests function 'setUpAll'
+  /// Typically called from within a flutter_test `setUpAll` callback.
   static Future<Set<String>> setUpAll() async {
-    final completer = Completer<Set<String>>();
-    await getWidgetNames().then((value) {
-      _widgetNames = value;
-      completer.complete(value);
-    });
-    return completer.future;
+    final names = await getWidgetNames();
+    _widgetNames = names;
+    return names;
   }
 
   /// Cached set of project widget names discovered during [setUpAll].
   static Set<String>? get widgetNames => _widgetNames;
 }
 
-/// [_globalApprovalTest] resolves the name conflict with [WidgetTester.approvalTest]
-Future<void> Function(String?, String, Options?) _globalApprovalTest =
-    (description, value, options) async {
+Future<void> _runApprovalTest(
+  String? description,
+  String value,
+  Options? options,
+) async {
+  final base = options ?? const Options();
   Approvals.verify(
     value,
-    options: options != null
-        ? options.copyWith(
-            scrubber: options.scrubber,
-            approveResult: options.approveResult,
-            comparator: options.comparator,
-            reporter: options.reporter,
-            deleteReceivedFile: options.deleteReceivedFile,
-            namer: Namer(
-              filePath: options.namer.filePath,
-              options: options.namer.options,
-              addTestName: options.namer.addTestName,
-              description: description,
-            ),
-            logErrors: options.logErrors,
-            logResults: options.logResults,
-            includeClassNameDuringSerialization:
-                options.includeClassNameDuringSerialization,
-          )
-        : Options(
-            namer: Namer(
-              description: description,
-            ),
-          ),
+    options: base.copyWith(
+      namer: base.namer.copyWith(description: description),
+    ),
   );
-};
+}
 
 extension WidgetTesterApprovedExtension on WidgetTester {
-  /// Returns the meta data for the widgets for comparison during the approval test
+  /// Returns the widget-tree meta data used as the approval snapshot.
   Future<String> get widgetsString async {
-    final completer = Completer<String>();
     assert(_widgetNames != null, '''
-    Looks like Approved.initialize() was not called before running an approvalTest. Typically, 
-    this issue is solved by calling Approved.initialize() from within setUpAll:
-    
-        void setUpAll(() async {
-          await Approved.initialize();
+    Looks like ApprovalWidgets.setUpAll() was not called before running an approvalTest. Typically,
+    this issue is solved by calling it from within setUpAll:
+
+        setUpAll(() async {
+          await ApprovalWidgets.setUpAll();
         });
 ''');
 
-    await widgets_meta_data
-        .collectWidgetsMetaData(
+    final metaLines = await widgets_meta_data.collectWidgetsMetaData(
       this,
       outputMeta: true,
       verbose: false,
+      // Each approval snapshot must be self-contained — a full picture of the
+      // tree, not a diff from a prior approvalTest() call that shares this
+      // isolate's cached widget metas.
+      compareWithPrevious: false,
       widgetNames: ApprovalWidgets.widgetNames,
     )
-        .then((stringList) {
-      completer.complete(stringList.join('\n'));
-    });
+      // Sort so the snapshot is stable across runs regardless of tree-traversal
+      // order; otherwise approvals flake on insertion-order changes.
+      ..sort();
 
-    return completer.future;
+    return metaLines.join('\n');
   }
 
-  /// Performs an approval test.
+  /// Performs an approval test against the current widget tree.
   ///
-  /// [description] is the name of the test. It is appended to the description in [Tester].
-  /// [textForReview] is the meta data text used in the approval test.
+  /// [description] is appended to the generated approval file name.
+  /// [textForReview] overrides the captured widget-tree meta data.
+  /// [options] are forwarded to [Approvals.verify].
   Future<void> approvalTest({
     String? description,
     String? textForReview,
     Options? options,
   }) async {
-    final resultCompleter = Completer<void>();
-    final widgetsMetaCompleter = Completer<String>();
-
-    // If no text passed, then get the widget meta from the widget tree
-    if (textForReview == null) {
-      await widgetsString.then((value) {
-        widgetsMetaCompleter.complete(value);
-      });
-    } else {
-      widgetsMetaCompleter.complete(textForReview);
-    }
-    await widgetsMetaCompleter.future.then((value) {
-      resultCompleter
-          .complete(_globalApprovalTest(description, value, options));
-    });
-    return resultCompleter.future;
+    final value = textForReview ?? await widgetsString;
+    await _runApprovalTest(description, value, options);
   }
 
-  /// Output expect statements to the console.
-  Future<void> printExpects() => widgets_meta_data.printExpects(this);
+  /// Outputs generated `expect` statements for the current tree to the console.
+  ///
+  /// [widgetTypes] registers custom widget types to match with `find.byType`.
+  /// [widgetNames] overrides the project class names discovered during setup.
+  Future<void> printExpects({
+    Set<Type>? widgetTypes,
+    Set<String>? widgetNames,
+  }) =>
+      widgets_meta_data.printExpects(
+        this,
+        widgetTypes: widgetTypes,
+        widgetNames: widgetNames ?? ApprovalWidgets.widgetNames,
+      );
+
+  /// Performs an approval test on the rendered accessibility (semantics) tree.
+  ///
+  /// Captures a deterministic, geometry-free description of the semantics tree
+  /// (labels, values, hints, tooltips, identifiers, and actions), making it a
+  /// strong approval artifact for accessibility coverage in widget and
+  /// integration tests.
+  ///
+  /// [description] is appended to the generated approval file name.
+  /// [options] are forwarded to [Approvals.verify].
+  Future<void> approvalSemantics({
+    String? description,
+    Options? options,
+  }) async {
+    final handle = ensureSemantics();
+    try {
+      final viewFinder = find.byType(View);
+      final root =
+          viewFinder.evaluate().isEmpty ? null : getSemantics(viewFinder);
+      await _runApprovalTest(description, describeSemanticsTree(root), options);
+    } finally {
+      handle.dispose();
+    }
+  }
+
+  /// Verifies a golden image of [finder] against an approved PNG.
+  ///
+  /// The golden file is named to sit alongside the text approvals
+  /// (`<test_file>.<test_name>.<description>.png`), keeping pixel and text
+  /// snapshots together. Run with `flutter test --update-goldens` to (re)create
+  /// the approved image.
+  Future<void> approvalGolden(
+    Finder finder, {
+    String? description,
+  }) async {
+    final namer = Namer(
+      filePath: ApprovalWidgets.filePathExtractor.filePath,
+      description: description,
+    );
+    final goldenName =
+        namer.approvedFileName.replaceAll('.approved.txt', '.png');
+    await expectLater(finder, matchesGoldenFile(goldenName));
+  }
 }

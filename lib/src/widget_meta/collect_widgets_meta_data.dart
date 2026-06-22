@@ -87,8 +87,7 @@ Future<void> addTextToIntlReverseLookup({
 /// [silent ] is true to suppress output to console and file (should be false inside generated widgetTests).
 /// [verbose] shows explanatory text that explains meta data.
 /// [compareWithPrevious ] is true to compare the current states with previous to display diffs.
-/// [outputExpects] is true to print expect statements to console.
-/// [outputMeta] is true to output data to an approval-test file.
+/// [outputMeta] is true to output an approval-test snapshot instead of expect statements.
 Future<List<String>> collectWidgetsMetaData(
   WidgetTester tester, {
   Set<Type>? widgetTypes,
@@ -97,11 +96,8 @@ Future<List<String>> collectWidgetsMetaData(
   bool silent = false,
   bool verbose = true,
   bool compareWithPrevious = true,
-  bool? outputExpects,
   bool? outputMeta,
 }) async {
-  assert(outputExpects == null || outputMeta == null);
-
   registeredNames = widgetNames ?? {};
 
   if (pathToStrings != null) {

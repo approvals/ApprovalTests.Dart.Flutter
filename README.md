@@ -102,13 +102,62 @@ calls to `ApprovalWidgets.setUpAll()` to your tests' `setUpAll` calls, like so:
         });
     }
 ```
+
+> Each call to `approvalTest()` writes a **full, self-contained snapshot** of the
+> current widget tree. Calling it several times in one test produces independent
+> snapshots (e.g. before and after a tap), and snapshot lines are sorted so the
+> output is stable across runs.
+
+## 🧪 Snapshotting the accessibility tree
+
+`approvalSemantics()` captures a deterministic, geometry-free description of the
+rendered semantics tree (labels, values, hints, tooltips, identifiers, and
+actions). It is a strong approval artifact for accessibility coverage and reads
+cleanly in a diff:
+
+```dart
+    testWidgets('home screen semantics', (tester) async {
+        await tester.pumpWidget(const MyApp());
+        await tester.pumpAndSettle();
+
+        await tester.approvalSemantics(description: 'home a11y');
+    });
+```
+
+## 🖼 Golden (pixel) approvals
+
+`approvalGolden()` wires Flutter's native golden workflow into the same naming
+convention as the text approvals, so the `.png` sits next to the `.approved.txt`
+files. Create or update the approved image with `flutter test --update-goldens`:
+
+```dart
+    testWidgets('home screen pixels', (tester) async {
+        await tester.pumpWidget(const MyApp());
+        await tester.pumpAndSettle();
+
+        await tester.approvalGolden(find.byType(MyApp), description: 'home pixels');
+    });
+```
+
+## 🎯 Matching widgets by type
+
+Register your custom widget types to include them in approval snapshots and to
+use the `expectWidget` / `tapWidget` finder helpers:
+
+```dart
+    registerTypes({MyButton, MyCard});
+
+    tester.expectWidget(key: MyKeys.submit, matcher: findsOneWidget);
+    await tester.tapWidget(text: 'Submit');
+```
+
 ## 📦 Installation
 
 Add the following to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  approval_tests_flutter: ^1.3.2
+  approval_tests_flutter: ^1.4.0
 ```
 
 ## 👀 Getting Started

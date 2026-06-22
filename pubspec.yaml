@@ -1,6 +1,6 @@
 name: approval_tests_flutter
 description: Approval Tests implementation in Dart (Flutter). Inspired by ApprovalTests.
-version: 1.3.2
+version: 1.4.0
 repository: https://github.com/approvals/ApprovalTests.Dart.Flutter
 homepage: https://github.com/approvals/ApprovalTests.Dart.Flutter
 issue_tracker: https://github.com/approvals/ApprovalTests.Dart.Flutter/issues
@@ -30,7 +30,6 @@ dependencies:
     sdk: flutter
   approval_tests: ^1.3.6
   analyzer: ">=12.0.0 <14.0.0"
-  match: ^0.4.1
 
 dev_dependencies:
   sizzle_lints: ^2.1.7

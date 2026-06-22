@@ -1,3 +1,13 @@
+## 1.4.0
+- **Fix (behavior change):** `approvalTest()` now writes a full, self-contained snapshot of the widget tree on every call. Previously a second call in the same test emitted only the *delta* from the prior call, producing snapshots that could not be reviewed in isolation. Existing approved files that relied on the old delta output must be re-approved.
+- Snapshot lines are now sorted deterministically, so approvals no longer flake on widget tree-traversal order.
+- Added `tester.approvalSemantics()` — approval testing of the rendered accessibility (semantics) tree (labels, values, hints, tooltips, identifiers, actions); geometry is omitted so output is stable across platforms.
+- Added `tester.approvalGolden(finder)` — golden/pixel approvals named to sit alongside the text approvals; run `flutter test --update-goldens` to (re)create the image.
+- Exported the `expectWidget` / `tapWidget` / `findBy` finder helpers and `registerTypes`, and exposed `widgetTypes` / `widgetNames` on `tester.printExpects()`.
+- Removed the cold-start `flutter --version` subprocess; the Dart SDK is now resolved from `FLUTTER_ROOT`, making widget-name extraction faster and not dependent on `flutter` being on `PATH`.
+- Removed the unused `match` dependency.
+- Internal cleanup: replaced the `Completer`/`.then` wrappers with `async`/`await` (failures now propagate instead of hanging to timeout), guarded the analyzer parse-result cast, fixed the stale `Approved.initialize()` setup hint, and stopped tracking the generated `.approval_tests/` cache.
+
 ## 1.3.2
 - Raised the `analyzer` constraint to `>=12.0.0 <14.0.0` to resolve a version conflict with `flutter_test` on current Flutter/Dart SDKs, whose pinned `test`/`test_api` require analyzer 12+.
 - Migrated widget-name extraction to the analyzer 12 AST API (`ClassDeclaration.namePart.typeName`), replacing the removed `name` token getter.
