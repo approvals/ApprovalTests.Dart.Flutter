@@ -32,7 +32,7 @@
 
 `Approval tests` simplify this by taking a snapshot of the results, and confirming that they have not changed.
 
-In normal unit testing, you say `expect(person.getAge(), 5)`. Approvals allow you to do this when the thing that you want to assert is no longer a primitive but a complex object. For example, you can say, `Approvals.verify(person)`.
+In normal unit testing, you say `expect(person.getAge(), 5)`. Approvals allow you to do this when the thing that you want to assert is no longer a primitive but a complex object. `Approvals.verify()` accepts text; for a model with a `toJson()` method, use `Approvals.verifyAsJson(person.toJson())`.
 
 I am writing an implementation of **[Approval Tests](https://approvaltests.com/)** in Dart. If anyone wants to help, please **[text](https://t.me/yelmuratoff)** me. 🙏
 

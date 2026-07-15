@@ -5,13 +5,14 @@ Last updated: 2026-07-15
 Current baseline:
 
 - latest published package:
-  [`approval_tests_flutter 1.4.1`](https://pub.dev/packages/approval_tests_flutter);
-- repository baseline: `refactor/approval-experience` at `1b68abd`;
+  [`approval_tests_flutter 1.3.1`](https://pub.dev/packages/approval_tests_flutter);
+- repository baseline: `refactor/approval-experience` at `e8e6de2`;
+- current package version: `1.4.1`;
 - current core constraint: `approval_tests: ^1.3.6`, while the published core
   package is `1.4.3`;
-- unreleased work: `WidgetActionPumpPolicy` adds explicit no-pump, single-frame,
-  fixed-duration, and bounded-settling behavior to `tapWidget()` while keeping
-  the 1.x default source compatible;
+- version 1.4.1 adds `WidgetActionPumpPolicy` with explicit no-pump,
+  single-frame, fixed-duration, and bounded-settling behavior for `tapWidget()`
+  while keeping the 1.x default source compatible;
 - `analyzer` is a runtime dependency because `ApprovalWidgets.setUpAll()`
   currently parses the consuming project's `lib/` sources at test runtime;
 - compatibility policy: existing text snapshots and golden names remain stable
@@ -104,7 +105,10 @@ framework, state-management layer, router, or localization solution.
 - [ ] Keep Flutter and core CHANGELOG entries linked whenever a behavior spans
       both repositories.
 - [ ] Merge and release from a branch whose history contains the published
-      `1.4.1` source and tag.
+      `1.3.1` source and tag; create the `1.4.1` tag only after publication.
+- [ ] If Flutter raises its minimum core version to the release containing the
+      `ispectify` migration, raise the Flutter package's Dart SDK floor to 3.6
+      in the same release and test that lower bound explicitly.
 
 ### Explicit action settling — P0
 
@@ -445,13 +449,14 @@ Acceptance criteria:
 ## Ordered delivery slices
 
 Every slice must be independently reviewable and green. Flutter work that
-depends on an unreleased core API starts only after that core slice is released
-or consumed through an explicitly documented temporary path dependency.
+depends on a not-yet-published core API starts only after that core slice is
+released or consumed through an explicitly documented temporary path
+dependency.
 
 | Order | Deliverable                                        | Primary files                                                                                                              | Focused verification                                             |
 | ----- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 1     | Lower-bound/latest core compatibility matrix       | `pubspec.yaml`, CI workflows, `CHANGELOG.md`                                                                               | `flutter pub get`, `flutter analyze`, `flutter test`             |
-| 2     | Explicit tap/pump actions                          | `lib/src/widget_meta/widget_tester_extension.dart`, action tests                                                           | `flutter test test/approval_tests_flutter_regressions_test.dart` |
+| 2     | Explicit tap/pump actions (complete)               | `lib/src/widget_meta/widget_tester_extension.dart`, `test/widget_meta/widget_tester_extension_test.dart`                   | `flutter test test/widget_meta/widget_tester_extension_test.dart` |
 | 3     | Isolated capture session                           | `lib/src/approval_session.dart`, `lib/src/src.dart`, `lib/src/widget_meta/collect_widgets_meta_data.dart`, isolation tests | focused regression test, then full suite                         |
 | 4     | Awaited and atomic widget-name cache               | `lib/src/get_widget_names.dart`, cache tests                                                                               | `flutter test test/approval_tests_flutter_regressions_test.dart` |
 | 5     | Immutable approval environment and restore harness | `lib/src/environment/`, environment tests                                                                                  | `flutter test test/environment_test.dart`                        |
