@@ -1,16 +1,22 @@
-# example
+# approval_tests_flutter example
 
-A new Flutter project.
+This app demonstrates widget-tree approval testing against the local
+`approval_tests_flutter` package.
 
-## Getting Started
+Run the example approvals from this directory:
 
-This project is a starting point for a Flutter application.
+```sh
+flutter test
+```
 
-A few resources to get you started if this is your first Flutter project:
+The test captures the counter before and after interaction. Its
+`*.approved.txt` files are committed as the reviewed baseline; a mismatch leaves
+a `*.received.txt` file for inspection.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Approval capture methods do not pump implicitly. Prepare the widget tree before
+calling `approvalTest()`. For `tapWidget()`, choose a
+`WidgetActionPumpPolicy` explicitly in new tests when the action needs no pump,
+one frame, a fixed duration, or bounded settling.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+See the package [README](../../README.md) for complete setup and migration
+examples.

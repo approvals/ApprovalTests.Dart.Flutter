@@ -1,3 +1,9 @@
+## 1.4.1
+
+- Added `WidgetActionPumpPolicy` so `tapWidget()` callers can explicitly choose no pump, one pump, a fixed-duration pump, or bounded settling.
+- Deprecated `tapWidget(shouldPumpAndSettle: ...)`. Existing calls still settle by default throughout 1.x; migrate to the explicit `pumpPolicy` parameter.
+- Approval capture helpers remain caller-controlled and never pump or settle implicitly.
+
 ## 1.4.0
 
 - **Fix (behavior change):** `approvalTest()` now writes a full, self-contained snapshot of the widget tree on every call. Previously a second call in the same test emitted only the _delta_ from the prior call, producing snapshots that could not be reviewed in isolation. Existing approved files that relied on the old delta output must be re-approved.

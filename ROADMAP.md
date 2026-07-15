@@ -1,14 +1,17 @@
 # ApprovalTests.Dart.Flutter Roadmap
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
 Current baseline:
 
 - latest published package:
-  [`approval_tests_flutter 1.4.0`](https://pub.dev/packages/approval_tests_flutter);
+  [`approval_tests_flutter 1.4.1`](https://pub.dev/packages/approval_tests_flutter);
 - repository baseline: `refactor/approval-experience` at `1b68abd`;
 - current core constraint: `approval_tests: ^1.3.6`, while the published core
   package is `1.4.3`;
+- unreleased work: `WidgetActionPumpPolicy` adds explicit no-pump, single-frame,
+  fixed-duration, and bounded-settling behavior to `tapWidget()` while keeping
+  the 1.x default source compatible;
 - `analyzer` is a runtime dependency because `ApprovalWidgets.setUpAll()`
   currently parses the consuming project's `lib/` sources at test runtime;
 - compatibility policy: existing text snapshots and golden names remain stable
@@ -79,63 +82,65 @@ framework, state-management layer, router, or localization solution.
 - [x] `tester.approvalGolden()` using Flutter's native golden matcher.
 - [x] Descriptive names for multiple approvals in one test.
 - [x] `findBy`, `expectWidget`, and `tapWidget` helpers.
+- [x] Explicit `tapWidget()` pump policies with a backwards-compatible 1.x
+      default.
 - [x] Custom widget type registration and project class-name discovery.
 - [x] Runtime AST scanning through `package:analyzer` without launching a
-  nested Flutter process.
+      nested Flutter process.
 - [x] Regression coverage for widget-name loading, key parsing, metadata value
-  equality, snapshot completeness, ordering, and semantics output.
+      equality, snapshot completeness, ordering, and semantics output.
 
 ## Milestone 0 — Safe 1.x maintenance
 
 ### Dependency and release alignment — P0
 
 - [ ] Verify whether `approval_tests 1.3.6` actually supports every current
-  Flutter API; `^1.3.6` already permits Pub to resolve `1.4.3`.
+      Flutter API; `^1.3.6` already permits Pub to resolve `1.4.3`.
 - [ ] Keep `1.3.6` as the minimum when tests prove compatibility; raise it only
-  when Flutter starts consuming a newer core API.
+      when Flutter starts consuming a newer core API.
 - [ ] Test both the declared lower bound and the latest compatible core release
-  before publishing.
+      before publishing.
 - [ ] Record the exact minimum core version required by each Flutter feature.
 - [ ] Keep Flutter and core CHANGELOG entries linked whenever a behavior spans
-  both repositories.
+      both repositories.
 - [ ] Merge and release from a branch whose history contains the published
-  `1.4.0` source and tag.
+      `1.4.1` source and tag.
 
 ### Explicit action settling — P0
 
 `tapWidget()` currently calls `pumpAndSettle()` by default. Removing that
 behavior immediately would be a breaking change, so migration must be additive.
 
-- [ ] Document the existing implicit settling behavior and its timeout risk.
-- [ ] Add an explicit action API where the caller chooses no pump, one pump, a
-  fixed duration, or bounded settling.
-- [ ] Deprecate the implicit-settling convenience only after the explicit API
-  is available.
-- [ ] Change or remove the implicit default only in a major release.
-- [ ] Never add hidden settling to approval capture methods.
+- [x] Document the existing implicit settling behavior and its timeout risk.
+- [x] Add an explicit action API where the caller chooses no pump, one pump, a
+      fixed duration, or bounded settling.
+- [x] Deprecate the implicit-settling convenience only after the explicit API
+      is available.
+- [x] Change or remove the implicit default only in a major release.
+- [x] Never add hidden settling to approval capture methods.
 
 ### Capture-state isolation — P0
 
 - [ ] Move registered widget names/types, previous metadata, previous generated
-  expectations, and localization lookup state into an explicit test session.
+      expectations, and localization lookup state into an explicit test session.
 - [ ] Ensure `approvalTest()` always captures a complete snapshot without
-  mutating state used by another test.
+      mutating state used by another test.
 - [ ] Provide deterministic setup and teardown that restores all library-owned
-  state on success and failure.
+      state on success and failure.
 - [ ] Cover repeated groups and concurrent zones with isolation regression
-  tests even if Flutter currently schedules widget tests serially.
+      tests even if Flutter currently schedules widget tests serially.
 
 ### Widget-name discovery and cache safety — P0
 
 - [ ] Replace synchronous directory enumeration and cache writes inside async
-  setup with consistently awaited filesystem operations.
+      setup with consistently awaited filesystem operations.
 - [ ] Sort discovered source files and class names before writing the cache.
 - [ ] Write the cache atomically and handle an interrupted or malformed cache
-  as a recoverable miss.
+      as a recoverable miss.
 - [ ] Include the package root, analyzer-compatible SDK identity, and relevant
-  source timestamps in cache validation.
+      source timestamps in cache validation.
 - [ ] Document why `analyzer` cannot move to `dev_dependencies` while runtime
-  discovery remains public behavior.
+      discovery remains public behavior.
 - [ ] Measure setup time before adding caching or isolate complexity.
 
 Acceptance criteria for Milestone 0:
@@ -154,9 +159,9 @@ Acceptance criteria for Milestone 0:
 - [ ] Define an immutable Flutter approval environment model.
 - [ ] Represent logical viewport size and device-pixel ratio explicitly.
 - [ ] Represent locale, text scaling, brightness/theme variant, and target
-  platform only where the package can apply them predictably.
+      platform only where the package can apply them predictably.
 - [ ] Provide documented presets for common phones, tablets, and desktop
-  windows without pretending to emulate complete physical devices.
+      windows without pretending to emulate complete physical devices.
 - [ ] Keep environment values independent of global mutable state.
 
 The design should separate view configuration from app configuration. Viewport
@@ -175,9 +180,9 @@ Acceptance criteria:
 
 - [ ] Provide an optional helper for applying and restoring view configuration.
 - [ ] Let callers supply the widget tree, localization delegates, and theme
-  rather than hiding them inside package globals.
+      rather than hiding them inside package globals.
 - [ ] Require explicit `pump`, fixed-duration pumps, or caller-controlled
-  settling before capture.
+      settling before capture.
 - [ ] Document how to stub network images and animations.
 - [ ] Surface timeout and unfinished-animation failures clearly.
 
@@ -190,39 +195,39 @@ waits forever for an indeterminate animation.
 - [ ] Document deterministic locale, theme, text-scaling, and platform tests.
 - [ ] Document fonts and golden-test requirements for local machines and CI.
 - [ ] Explain when to choose widget metadata, semantics, a golden image, or a
-  combination of them.
+      combination of them.
 - [ ] Adopt the core explicit approval context when available so Flutter
-  captures do not require stack-trace parsing for source paths and test names.
+      captures do not require stack-trace parsing for source paths and test names.
 - [ ] Keep current artifact names stable while the explicit-context API is
-  introduced.
+      introduced.
 
 ## Milestone 2 — Golden and snapshot matrices
 
 ### Variant model
 
 - [ ] Define a small variant model for viewport, pixel ratio, locale, theme,
-  text scaling, and target platform.
+      text scaling, and target platform.
 - [ ] Generate deterministic, filesystem-safe names for each variant.
 - [ ] Reject duplicate names before running captures.
 - [ ] Preserve declaration order in reporting while keeping artifact naming
-  independent of iteration accidents.
+      independent of iteration accidents.
 
 ### Golden matrix
 
 - [ ] Add an approval helper for rendering the same widget across explicit
-  variants.
+      variants.
 - [ ] Pump a fresh widget tree for each variant to prevent state leakage.
 - [ ] Restore the test view after every variant, including failure paths.
 - [ ] Aggregate mismatches so one run reports every failed variant.
 - [ ] Support filtering variants for local development and CI shards.
 - [ ] Integrate with core artifact/reporting APIs when image-aware reporter
-  selection becomes available.
+      selection becomes available.
 - [ ] Reuse Flutter's `GoldenFileComparator` contract for pixel comparison;
-  do not ship a second image-diff engine in this package.
+      do not ship a second image-diff engine in this package.
 - [ ] Allow an explicitly supplied comparator or tolerance policy without
-  leaking it into later tests through the global binding.
+      leaking it into later tests through the global binding.
 - [ ] Record the comparator identity and tolerance in diagnostics so a changed
-  threshold cannot silently explain a passing golden.
+      threshold cannot silently explain a passing golden.
 
 Example use case:
 
@@ -244,9 +249,9 @@ Acceptance criteria:
 ### Pairwise variant coverage
 
 - [ ] Reuse the core pairwise-combination engine when full Flutter matrices are
-  too large.
+      too large.
 - [ ] Make pairwise selection explicit; never silently replace a requested full
-  matrix.
+      matrix.
 - [ ] Include selected and total scenario counts in diagnostics.
 
 ## Milestone 3 — Interaction and time-based approvals
@@ -255,9 +260,9 @@ Acceptance criteria:
 
 - [ ] Add a Flutter storyboard API built on the core storyboard model.
 - [ ] Capture named widget-tree and/or semantics frames around caller-defined
-  actions.
+      actions.
 - [ ] Let tests perform taps, text entry, drags, navigation, and pumps
-  explicitly.
+      explicitly.
 - [ ] Keep every frame complete and independently reviewable.
 - [ ] Support descriptions that produce deterministic artifact names.
 
@@ -274,7 +279,7 @@ After successful submission
 
 - [ ] Capture frames at explicit `Duration` offsets.
 - [ ] Support individual golden frames first; consider contact sheets only when
-  the core artifact pipeline supports them cleanly.
+      the core artifact pipeline supports them cleanly.
 - [ ] Never use wall-clock time or sleeps.
 - [ ] Verify exact frame ordering and frame-to-file naming.
 - [ ] Restore ticker and view state after success or failure.
@@ -290,16 +295,16 @@ Acceptance criteria:
 ### Mixed artifact stories
 
 - [ ] Build one scenario result that produces widget metadata, semantics, and
-  golden artifacts through the core multi-artifact bundle.
+      golden artifacts through the core multi-artifact bundle.
 - [ ] Implement Flutter capture as a core converter or equivalent explicit
-  adapter, not as a second comparison and reporting pipeline.
+      adapter, not as a second comparison and reporting pipeline.
 - [ ] Use a shared verification context and stable frame name for all artifacts
-  from the same capture.
+      from the same capture.
 - [ ] Report all mismatches without losing which capture mode failed.
 - [ ] Keep each artifact separately reviewable rather than embedding binary data
-  into text snapshots.
+      into text snapshots.
 - [ ] Clean up temporary image and capture resources even when conversion,
-  comparison, or reporting fails.
+      comparison, or reporting fails.
 
 Acceptance criteria:
 
@@ -315,9 +320,9 @@ Acceptance criteria:
 ### Richer semantics snapshots
 
 - [ ] Add stable roles/flags when the minimum supported Flutter SDK exposes a
-  non-deprecated API for them.
+      non-deprecated API for them.
 - [ ] Consider focusability, enabled/disabled state, checked/toggled state,
-  heading level, selected state, and live-region behavior.
+      heading level, selected state, and live-region behavior.
 - [ ] Keep geometry, transforms, and scroll offsets excluded by default.
 - [ ] Version or explicitly migrate semantics output when new fields are added.
 - [ ] Add examples for controls, forms, validation errors, and navigation.
@@ -332,9 +337,9 @@ Acceptance criteria:
 ### Flutter-specific volatile values
 
 - [ ] Catalog actual volatile widget and semantics values before adding
-  scrubbers.
+      scrubbers.
 - [ ] Add narrowly scoped, opt-in scrubbers for generated runtime identifiers
-  only when they cannot be omitted at the capture source.
+      only when they cannot be omitted at the capture source.
 - [ ] Reuse core aliasing so repeated identifiers preserve relationships.
 - [ ] Do not scrub widget text, keys, counts, or geometry broadly.
 
@@ -342,8 +347,8 @@ Acceptance criteria:
 
 - [ ] Document the stable metadata schema and ordering rules.
 - [ ] Evaluate whether type, key, text, state, and selected public properties
-  provide enough diagnostic value without exposing private implementation
-  details.
+      provide enough diagnostic value without exposing private implementation
+      details.
 - [ ] Add schema changes only with regression fixtures and migration notes.
 - [ ] Benchmark collection on large widget trees before optimizing it.
 
@@ -352,7 +357,7 @@ Acceptance criteria:
 ### Task-oriented examples
 
 - [ ] Add recipes for forms, localized screens, responsive layouts, dialogs,
-  lists, navigation, and accessibility.
+      lists, navigation, and accessibility.
 - [ ] Add a complete golden-matrix example application.
 - [ ] Add an interaction-story example showing text and semantics captures.
 - [ ] Add a decision table explaining which snapshot mode to use.
@@ -364,26 +369,26 @@ Acceptance criteria:
 - [ ] Upload received text and image artifacts on failure.
 - [ ] Reuse the core typed mismatch model and machine-readable manifest.
 - [ ] Document how stale-approval checks work with Flutter test filtering,
-  shards, golden variants, and multi-artifact frames.
+      shards, golden variants, and multi-artifact frames.
 - [ ] Document font installation and rendering constraints.
 - [ ] Keep approval explicit; CI does not update goldens automatically.
 
 ### Performance and compatibility
 
 - [ ] Add benchmarks for startup, AST widget-name discovery, large widget
-  trees, semantics trees, golden matrices, and animation frames.
+      trees, semantics trees, golden matrices, and animation frames.
 - [ ] Measure before changing caching or traversal behavior.
 - [ ] Test supported Flutter versions against the pinned analyzer range.
 - [ ] Add compatibility checks before raising the minimum Flutter or analyzer
-  version.
+      version.
 - [ ] Keep package startup free of nested `flutter` subprocesses.
 
 ### Release coordination
 
 - [ ] Document which Flutter features require a minimum core
-  `approval_tests` version.
+      `approval_tests` version.
 - [ ] Update the minimum core constraint only when the Flutter package uses a
-  newer API.
+      newer API.
 - [ ] Coordinate CHANGELOG entries for cross-package behavior changes.
 - [ ] Publish migration notes for snapshot format or naming changes.
 
@@ -392,20 +397,20 @@ Acceptance criteria:
 ### Optional source discovery
 
 - [ ] Measure how many real approval snapshots need project-wide AST discovery
-  rather than runtime widget types, keys, text, or explicit `registerTypes()`.
+      rather than runtime widget types, keys, text, or explicit `registerTypes()`.
 - [ ] Prototype an opt-in CLI or companion dev tool that generates the widget
-  name cache before tests.
+      name cache before tests.
 - [ ] Compare that workflow with keeping `analyzer` in runtime dependencies,
-  including setup time, version conflicts, discoverability, and CI ergonomics.
+      including setup time, version conflicts, discoverability, and CI ergonomics.
 - [ ] Remove the mandatory runtime analyzer only if the replacement preserves
-  existing snapshot coverage and has a clear migration path.
+      existing snapshot coverage and has a clear migration path.
 - [ ] Do not move `analyzer` mechanically to `dev_dependencies`; consuming
-  applications cannot use this package's dev dependencies at runtime.
+      applications cannot use this package's dev dependencies at runtime.
 
 ### Render summaries
 
 - [ ] Prototype a stable render summary only if it provides information that
-  widget metadata and goldens do not.
+      widget metadata and goldens do not.
 - [ ] Avoid raw render-object dumps, hashes, memory addresses, and geometry.
 - [ ] Validate usefulness on real layout regressions before exposing an API.
 
@@ -414,15 +419,15 @@ Acceptance criteria:
 - [ ] Explore deterministic keyboard/focus traversal stories.
 - [ ] Capture focused semantics identity after explicit traversal actions.
 - [ ] Separate platform-specific expectations where behavior intentionally
-  differs.
+      differs.
 
 ### Integration-test capture
 
 - [ ] Evaluate snapshot capture under `integration_test` on physical devices and
-  emulators.
+      emulators.
 - [ ] Define how artifacts are transported back to the host and CI.
 - [ ] Keep device-specific output separate from deterministic widget-test
-  approvals.
+      approvals.
 
 ## Explicit non-goals
 
@@ -443,18 +448,18 @@ Every slice must be independently reviewable and green. Flutter work that
 depends on an unreleased core API starts only after that core slice is released
 or consumed through an explicitly documented temporary path dependency.
 
-| Order | Deliverable | Primary files | Focused verification |
-| --- | --- | --- | --- |
-| 1 | Lower-bound/latest core compatibility matrix | `pubspec.yaml`, CI workflows, `CHANGELOG.md` | `flutter pub get`, `flutter analyze`, `flutter test` |
-| 2 | Explicit tap/pump actions | `lib/src/widget_meta/widget_tester_extension.dart`, action tests | `flutter test test/approval_tests_flutter_regressions_test.dart` |
-| 3 | Isolated capture session | `lib/src/approval_session.dart`, `lib/src/src.dart`, `lib/src/widget_meta/collect_widgets_meta_data.dart`, isolation tests | focused regression test, then full suite |
-| 4 | Awaited and atomic widget-name cache | `lib/src/get_widget_names.dart`, cache tests | `flutter test test/approval_tests_flutter_regressions_test.dart` |
-| 5 | Immutable approval environment and restore harness | `lib/src/environment/`, environment tests | `flutter test test/environment_test.dart` |
-| 6 | Core `ApprovalContext` adoption | `lib/src/src.dart`, naming tests | `flutter test test/approval_context_test.dart` |
-| 7 | Golden variant model and comparator restoration | `lib/src/goldens/`, golden matrix tests | `flutter test test/golden_matrix_test.dart` |
-| 8 | Interaction and animation stories | `lib/src/stories/`, story tests | `flutter test test/approval_story_test.dart` |
-| 9 | Widget/semantics/golden artifact bundle | `lib/src/capture/`, multi-artifact tests | `flutter test test/multi_artifact_capture_test.dart` |
-| 10 | Rich semantics and CI recipes | `lib/src/widget_meta/semantics_snapshot.dart`, examples, workflow docs | semantics tests, example tests, full suite |
+| Order | Deliverable                                        | Primary files                                                                                                              | Focused verification                                             |
+| ----- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1     | Lower-bound/latest core compatibility matrix       | `pubspec.yaml`, CI workflows, `CHANGELOG.md`                                                                               | `flutter pub get`, `flutter analyze`, `flutter test`             |
+| 2     | Explicit tap/pump actions                          | `lib/src/widget_meta/widget_tester_extension.dart`, action tests                                                           | `flutter test test/approval_tests_flutter_regressions_test.dart` |
+| 3     | Isolated capture session                           | `lib/src/approval_session.dart`, `lib/src/src.dart`, `lib/src/widget_meta/collect_widgets_meta_data.dart`, isolation tests | focused regression test, then full suite                         |
+| 4     | Awaited and atomic widget-name cache               | `lib/src/get_widget_names.dart`, cache tests                                                                               | `flutter test test/approval_tests_flutter_regressions_test.dart` |
+| 5     | Immutable approval environment and restore harness | `lib/src/environment/`, environment tests                                                                                  | `flutter test test/environment_test.dart`                        |
+| 6     | Core `ApprovalContext` adoption                    | `lib/src/src.dart`, naming tests                                                                                           | `flutter test test/approval_context_test.dart`                   |
+| 7     | Golden variant model and comparator restoration    | `lib/src/goldens/`, golden matrix tests                                                                                    | `flutter test test/golden_matrix_test.dart`                      |
+| 8     | Interaction and animation stories                  | `lib/src/stories/`, story tests                                                                                            | `flutter test test/approval_story_test.dart`                     |
+| 9     | Widget/semantics/golden artifact bundle            | `lib/src/capture/`, multi-artifact tests                                                                                   | `flutter test test/multi_artifact_capture_test.dart`             |
+| 10    | Rich semantics and CI recipes                      | `lib/src/widget_meta/semantics_snapshot.dart`, examples, workflow docs                                                     | semantics tests, example tests, full suite                       |
 
 After every slice run:
 
@@ -476,18 +481,18 @@ CHANGELOG entry plus migration note.
 
 ## Prior-art adoption matrix
 
-| Prior-art capability | Flutter decision | Roadmap location |
-| --- | --- | --- |
-| Verify: several outputs from one test | Adopt widget metadata, semantics, and PNG as one core artifact bundle | Milestone 3 |
-| Verify: converter extensions | Adopt an explicit Flutter capture adapter over the core converter contract | Milestone 3 |
-| Verify: async and cleanup | Reuse the awaited core engine and always restore binding/session state | Milestones 0–3 |
-| Verify: no stack-trace naming | Consume core `ApprovalContext` with a 1.x compatibility fallback | Milestone 1 |
-| Verify: machine-readable failures | Reuse typed core mismatches and run manifests | Milestone 5 |
-| Verify: dangling-file checks | Reuse core checks with variant, shard, and filtered-run safeguards | Milestone 5 |
-| ApprovalTests.Swift: UI approvals | Adopt explicit text, semantics, and golden captures rather than one ambiguous dump | Current foundation and Milestone 3 |
-| ApprovalTests.Java: storyboards and combinations | Adopt interaction stories and core pairwise variant selection | Milestones 2–3 |
-| ApprovalTests.Python: file/CI workflows | Reuse core artifacts, reporters, manifests, and explicit approval | Milestones 3 and 5 |
-| Flutter native goldens | Keep `matchesGoldenFile`/`GoldenFileComparator` as the pixel-comparison seam | Milestone 2 |
+| Prior-art capability                             | Flutter decision                                                                   | Roadmap location                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------------------------------- |
+| Verify: several outputs from one test            | Adopt widget metadata, semantics, and PNG as one core artifact bundle              | Milestone 3                        |
+| Verify: converter extensions                     | Adopt an explicit Flutter capture adapter over the core converter contract         | Milestone 3                        |
+| Verify: async and cleanup                        | Reuse the awaited core engine and always restore binding/session state             | Milestones 0–3                     |
+| Verify: no stack-trace naming                    | Consume core `ApprovalContext` with a 1.x compatibility fallback                   | Milestone 1                        |
+| Verify: machine-readable failures                | Reuse typed core mismatches and run manifests                                      | Milestone 5                        |
+| Verify: dangling-file checks                     | Reuse core checks with variant, shard, and filtered-run safeguards                 | Milestone 5                        |
+| ApprovalTests.Swift: UI approvals                | Adopt explicit text, semantics, and golden captures rather than one ambiguous dump | Current foundation and Milestone 3 |
+| ApprovalTests.Java: storyboards and combinations | Adopt interaction stories and core pairwise variant selection                      | Milestones 2–3                     |
+| ApprovalTests.Python: file/CI workflows          | Reuse core artifacts, reporters, manifests, and explicit approval                  | Milestones 3 and 5                 |
+| Flutter native goldens                           | Keep `matchesGoldenFile`/`GoldenFileComparator` as the pixel-comparison seam       | Milestone 2                        |
 
 ## Quality and release gates
 
@@ -496,7 +501,7 @@ Every roadmap item must meet the following gates before release:
 - [ ] Public APIs have dartdoc and complete widget-test examples.
 - [ ] Tests cover setup, capture, cleanup, and failure paths.
 - [ ] New deterministic capture and configuration logic maintains at least 80%
-  line coverage, including restoration failures.
+      line coverage, including restoration failures.
 - [ ] Snapshot output is deterministic and intentionally reviewed.
 - [ ] Any output change includes updated approved fixtures and a CHANGELOG note.
 - [ ] `dart format .` produces no changes.
@@ -506,23 +511,23 @@ Every roadmap item must meet the following gates before release:
 - [ ] View, semantics, ticker, and global binding state is restored after tests.
 - [ ] Performance claims are backed by benchmarks.
 - [ ] Snapshots and diagnostics do not expose secrets, credentials, or PII by
-  default.
+      default.
 
 ## Dependencies on the core roadmap
 
 The following Flutter milestones should reuse core work:
 
-| Flutter capability | Core prerequisite |
-| --- | --- |
-| Image-aware reporter selection | Artifact-aware reporters |
-| Mixed text and image stories | Async multi-artifact and converter pipeline |
-| Pairwise golden matrices | Best-covering-pairs engine |
-| Interaction stories | Core storyboard model |
-| Explicit test naming | Core `ApprovalContext` and test adapter |
-| CI mismatch collection | Typed failures and machine-readable manifest |
-| Stale golden detection | Core stale-approval checks |
-| Runtime identifier normalization | Alias-preserving scrubbers |
-| Scoped Flutter defaults | Async-safe scoped `Options` foundation |
+| Flutter capability               | Core prerequisite                            |
+| -------------------------------- | -------------------------------------------- |
+| Image-aware reporter selection   | Artifact-aware reporters                     |
+| Mixed text and image stories     | Async multi-artifact and converter pipeline  |
+| Pairwise golden matrices         | Best-covering-pairs engine                   |
+| Interaction stories              | Core storyboard model                        |
+| Explicit test naming             | Core `ApprovalContext` and test adapter      |
+| CI mismatch collection           | Typed failures and machine-readable manifest |
+| Stale golden detection           | Core stale-approval checks                   |
+| Runtime identifier normalization | Alias-preserving scrubbers                   |
+| Scoped Flutter defaults          | Async-safe scoped `Options` foundation       |
 
 ## Prior art
 

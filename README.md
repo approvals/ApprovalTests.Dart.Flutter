@@ -28,9 +28,9 @@
 
 ## 📖 About
 
-**[Approval Tests](https://approvaltests.com/)** are an alternative to assertions. You’ll find them useful for testing objects with complex values *(such as long strings)*, lots of properties, or collections of objects.
+**[Approval Tests](https://approvaltests.com/)** are an alternative to assertions. You’ll find them useful for testing objects with complex values _(such as long strings)_, lots of properties, or collections of objects.
 
-`Approval tests` simplify this by taking a snapshot of the results, and confirming that they have not changed.   
+`Approval tests` simplify this by taking a snapshot of the results, and confirming that they have not changed.
 
 In normal unit testing, you say `expect(person.getAge(), 5)`. Approvals allow you to do this when the thing that you want to assert is no longer a primitive but a complex object. For example, you can say, `Approvals.verify(person)`.
 
@@ -39,13 +39,13 @@ I am writing an implementation of **[Approval Tests](https://approvaltests.com/)
 Thanks to **[Richard Coutts](https://github.com/buttonsrtoys)** for special contributions to the `approval_tests_flutter` package.
 
 ## Packages
+
 ApprovalTests is designed for two level: Dart and Flutter. <br>
 
-| Package | Version | Description | 
-| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [approval_tests](https://github.com/approvals/ApprovalTests.Dart/tree/main/packages/approval_tests) | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests *(main)* |
-| [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart.Flutter) | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter) | **Flutter** package for approval testing of `widget`, `integration` tests |
-
+| Package                                                                                             | Version                                                                                                              | Description                                                               |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [approval_tests](https://github.com/approvals/ApprovalTests.Dart/tree/main/packages/approval_tests) | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests _(main)_            |
+| [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart.Flutter)                   | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter)   | **Flutter** package for approval testing of `widget`, `integration` tests |
 
 ## 📋 How it works
 
@@ -55,6 +55,7 @@ ApprovalTests is designed for two level: Dart and Flutter. <br>
 - If the test is passed, the `received` file is deleted automatically. You can change this by changing the `deleteReceivedFile` value in `options`. If the test fails, the received file remains for analysis.
 
 Instead of writing:
+
 ```dart
     testWidgets('home page', (WidgetTester tester) async {
         await tester.pumpWidget(const MyApp());
@@ -63,7 +64,7 @@ Instead of writing:
         expect(find.text('You have pushed the button this many times:'), findsOneWidget);
         expect(find.text('0'), findsOneWidget);
         expect(find.byWidgetPredicate(
-            (Widget widget) => widget is Text && widget.data == 'hello' && 
+            (Widget widget) => widget is Text && widget.data == 'hello' &&
             widget.key == ValueKey('myKey'),
         ), findsOneWidget);
         expect(find.text('Approved Example'), findsOneWidget);
@@ -71,6 +72,7 @@ Instead of writing:
 ```
 
 Write this:
+
 ```dart
     testWidgets('smoke test', (WidgetTester tester) async {
         await tester.pumpWidget(const MyApp());
@@ -92,7 +94,7 @@ perform an approval test by calling `tester.approvalTest`, and give your test a 
     });
 ```
 
-To include your project's custom widget types in your test, and to perform post-test checks, add 
+To include your project's custom widget types in your test, and to perform post-test checks, add
 calls to `ApprovalWidgets.setUpAll()` to your tests' `setUpAll` calls, like so:
 
 ```dart
@@ -148,8 +150,52 @@ use the `expectWidget` / `tapWidget` finder helpers:
     registerTypes({MyButton, MyCard});
 
     tester.expectWidget(key: MyKeys.submit, matcher: findsOneWidget);
-    await tester.tapWidget(text: 'Submit');
+    await tester.tapWidget(intl: (_) => 'Submit');
 ```
+
+For backwards compatibility, `tapWidget()` calls `pumpAndSettle()` after the
+tap. Flutter's default settle timeout is ten minutes, so an indeterminate
+animation can make a test wait much longer than intended. New tests should
+choose an explicit pump policy:
+
+```dart
+    // Dispatch the tap without rendering another frame.
+    await tester.tapWidget(
+      intl: (_) => 'Submit',
+      pumpPolicy: const WidgetActionPumpPolicy.none(),
+    );
+
+    // Render exactly one frame.
+    await tester.tapWidget(
+      intl: (_) => 'Submit',
+      pumpPolicy: const WidgetActionPumpPolicy.once(),
+    );
+
+    // Advance the test clock by a fixed duration and render one frame.
+    await tester.tapWidget(
+      intl: (_) => 'Submit',
+      pumpPolicy: const WidgetActionPumpPolicy.forDuration(
+        Duration(milliseconds: 300),
+      ),
+    );
+
+    // Settle with an explicit frame step and upper time bound.
+    await tester.tapWidget(
+      intl: (_) => 'Submit',
+      pumpPolicy: const WidgetActionPumpPolicy.untilSettled(
+        step: Duration(milliseconds: 50),
+        timeout: Duration(seconds: 2),
+      ),
+    );
+```
+
+The legacy `shouldPumpAndSettle` parameter is deprecated. Its default behavior
+will remain unchanged throughout 1.x; use
+`WidgetActionPumpPolicy.none()` instead of passing `false`. When both parameters
+are supplied, `pumpPolicy` takes precedence.
+
+Approval capture helpers (`approvalTest`, `approvalSemantics`, and
+`approvalGolden`) never pump or settle implicitly.
 
 ## 📦 Installation
 
@@ -157,13 +203,14 @@ Add the following to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  approval_tests_flutter: ^1.4.0
+  approval_tests_flutter: ^1.4.1
 ```
 
 ## 👀 Getting Started
 
 The best way to get started is to download and open the example project:
-* [Flutter example project](https://github.com/approvals/ApprovalTests.Dart.Flutter/tree/main/example/flutter_example)
+
+- [Flutter example project](https://github.com/approvals/ApprovalTests.Dart.Flutter/tree/main/example/flutter_example)
 
 ## 📚 How to use
 
@@ -184,36 +231,48 @@ Approving results just means saving the `.approved.txt` file with your desired r
 We’ll provide more explanation in due course, but, briefly, here are the most common approaches to do this.
 
 #### • Via Diff Tool
+
 Most diff tools have the ability to move text from left to right, and save the result.
 How to use diff tools is just below, there is a `Comparator` class for that.
 
 #### • Via CLI command
+
 You can run the command in a terminal to review your files:
+
 ```bash
 dart run approval_tests:review
 ```
+
 After running the command, the files will be analyzed and you will be asked to choose one of the options:
+
 - `y` - Approve the received file.
 - `n` - Reject the received file.
 - `v`iew - View the differences between the received and approved files. After selecting `v` you will be asked which IDE you want to use to view the differences.
 
 The command `dart run approval_tests:review` has additional options, including listing files, selecting
- files to review from this list by index, and more. For its current capabilities, run 
-   ```bash
-     dart run approval_tests:review --help
-   ```
- Typing 'dart run approval_tests:review' is tedious! To reduce your typing, alias the command in your 
- `.zshrc` or `.bashrc` file
-   ```
-     alias review='dart run approval_tests:review'
-   ```
- or PowerShell profile
-   ```shell
-     function review {
-         dart run approval_tests:review
-     }
-   ```
+files to review from this list by index, and more. For its current capabilities, run
+
+```bash
+  dart run approval_tests:review --help
+```
+
+Typing 'dart run approval_tests:review' is tedious! To reduce your typing, alias the command in your
+`.zshrc` or `.bashrc` file
+
+```
+  alias review='dart run approval_tests:review'
+```
+
+or PowerShell profile
+
+```shell
+  function review {
+      dart run approval_tests:review
+  }
+```
+
 #### • Via approveResult property
+
 If you want the result to be automatically saved after running the test, you need to use the `approveResult` property in `Options`:
 
 ```dart
@@ -237,6 +296,7 @@ void main() {
 
 this will result in the following file
 `example_test.test_JSON_object.approved.txt`
+
 ```txt
 {
   "name": "JsonTest",
@@ -249,6 +309,7 @@ this will result in the following file
 ```
 
 #### • Via file rename
+
 You can just rename the `.received` file to `.approved`.
 
 ### Reporters
@@ -256,15 +317,16 @@ You can just rename the `.received` file to `.approved`.
 Reporters are the part of Approval Tests that launch diff tools when things do not match. They are the part of the system that makes it easy to see what has changed.
 
 There are several reporters available in the package:
+
 - `CommandLineReporter` - This is the default reporter, which will output the diff in the terminal.
 - `GitReporter` - This reporter will open the diff in the Git GUI.
 - `DiffReporter` - This reporter will open the Diff Tool in your IDE.
-   - For Diff Reporter I using the default paths to the IDE, if something didn't work then you in the console see the expected correct path to the IDE and specify customDiffInfo. You can also contact me for help.
+  - For Diff Reporter I using the default paths to the IDE, if something didn't work then you in the console see the expected correct path to the IDE and specify customDiffInfo. You can also contact me for help.
 
 <img src="https://github.com/yelmuratoff/packages_assets/blob/main/assets/approval_tests/diff_command_line.png?raw=true" alt="CommandLineComparator img" title="ApprovalTests" style="max-width: 500px;">
 
-
 To use `DiffReporter` you just need to add it to `options`:
+
 ```dart
  options: const Options(
    reporter: const DiffReporter(),
@@ -276,7 +338,6 @@ To use `DiffReporter` you just need to add it to `options`:
   <img src="https://github.com/yelmuratoff/packages_assets/blob/main/assets/approval_tests/diff_tool_studio.png?raw=true" alt="Android Studio img" style="width: 45%;" />
 </div>
 
-
 ## 📝 Examples
 
 I have provided a couple of small examples here to show you how to use the package.
@@ -287,6 +348,7 @@ You can study it to understand how to use the package to test complex code.
 And the `verify_methods` folder has small examples of using different `ApprovalTests` methods for different cases.
 
 ### JSON example
+
 With `verifyAsJson`, if you pass data models as `JsonItem`, with nested other models as `AnotherItem` and `SubItem`, then you need to add an `toJson` method to each model for the serialization to succeed.
 
 ```dart
@@ -318,7 +380,6 @@ void main() {
   });
 }
 ```
-
 
 this will result in the following file
 `verify_as_json_test.verify_model.approved.txt`
@@ -352,8 +413,8 @@ this will result in the following file
 
 <img src="https://github.com/yelmuratoff/packages_assets/blob/main/assets/approval_tests/passed.png?raw=true" alt="Passed test example" title="ApprovalTests" style="max-width: 800px;">
 
-
 ## ❓ Which File Artifacts to Exclude from Source Control
+
 You must add any `approved` files to your source control system. But `received` files can change with any run and should be ignored. For Git, add this to your `.gitignore`:
 
 ```gitignore
@@ -361,11 +422,14 @@ You must add any `approved` files to your source control system. But `received` 
 ```
 
 ## ✉️ For More Information
-### Questions?  
-Ask me on Telegram: [`@yelmuratoff`](https://t.me/yelmuratoff).   
-Email: [`yelamanyelmuratov@gmail.com`](mailto:yelamanyelmuratov@gmail.com)   
+
+### Questions?
+
+Ask me on Telegram: [`@yelmuratoff`](https://t.me/yelmuratoff).  
+Email: [`yelamanyelmuratov@gmail.com`](mailto:yelamanyelmuratov@gmail.com)
 
 ### Video Tutorials
+
 - [Getting Started with ApprovalTests.Swift](https://qualitycoding.org/approvaltests-swift-getting-started/)
 - [How to Verify Objects (and Simplify TDD)](https://qualitycoding.org/approvaltests-swift-verify-objects/)
 - [Verify Arrays and See Simple, Clear Diffs](https://qualitycoding.org/verify-arrays-approvaltests-swift/)
@@ -375,6 +439,7 @@ Email: [`yelamanyelmuratov@gmail.com`](mailto:yelamanyelmuratov@gmail.com)
 You can also watch a series of short videos about [using ApprovalTests in .Net](https://www.youtube.com/playlist?list=PL0C32F89E8BBB5368) on YouTube.
 
 ### Podcasts
+
 Prefer learning by listening? Then you might enjoy the following podcasts:
 
 - [Hanselminutes](https://www.hanselminutes.com/360/approval-tests-with-llewellyn-falco)
@@ -386,11 +451,13 @@ Prefer learning by listening? Then you might enjoy the following podcasts:
 [![](https://codecov.io/gh/approvals/ApprovalTests.Dart.Flutter/branch/main/graphs/sunburst.svg)](https://codecov.io/gh/approvals/ApprovalTests.Dart.Flutter/branch/main)
 
 ## 🤝 Contributing
-Show some 💙 and <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter">star the repo</a> to support the project! 🙌   
-The project is in the process of development and we invite you to contribute through pull requests and issue submissions. 👍   
+
+Show some 💙 and <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter">star the repo</a> to support the project! 🙌  
+The project is in the process of development and we invite you to contribute through pull requests and issue submissions. 👍  
 We appreciate your support. 🫰
 
 <br><br>
+
 <div align="center" >
   <p>Thanks to all contributors of this package</p>
   <a href="https://github.com/approvals/ApprovalTests.Dart.Flutter/graphs/contributors">
