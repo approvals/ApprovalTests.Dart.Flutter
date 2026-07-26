@@ -1,21 +1,15 @@
 import 'package:approval_tests/approval_tests.dart';
+import 'package:approval_tests_flutter/src/approval_session.dart';
 import 'package:approval_tests_flutter/src/widget_meta/expect_meta.dart';
 import 'package:approval_tests_flutter/src/widget_meta/load_string_en.dart';
 import 'package:approval_tests_flutter/src/widget_meta/matcher_types.dart';
-import 'package:approval_tests_flutter/src/widget_meta/register_types.dart';
 import 'package:approval_tests_flutter/src/widget_meta/widget_meta.dart';
+import 'package:approval_tests_flutter/src/widget_meta/widget_registry.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Set<String> registeredNames = {};
-
 const String instructions =
     '/// Replace your call to generateExpects with the code below.';
-List<WidgetMeta> _previousWidgetMetas = [];
-List<String> _previousExpectStrings = [];
-bool _isEnStringReverseLookupLoaded = false;
-bool _isCommonTypesLoaded = false;
-Map<String, List<String>> _enStringReverseLookup = <String, List<String>>{};
 
 /// Output widget tests to the console.
 ///
@@ -32,6 +26,7 @@ Future<void> printExpects(
   bool silent = false,
   bool verbose = true,
   bool compareWithPrevious = true,
+  ApprovalSession? session,
 }) async {
   final text = await collectWidgetsMetaData(
     tester,
@@ -41,22 +36,26 @@ Future<void> printExpects(
     silent: silent,
     verbose: verbose,
     compareWithPrevious: compareWithPrevious,
+    session: session,
   );
 
   _outputText(text);
 }
 
-Future<void> _loadEnStringReverseLookupIfNecessary(String path) async {
-  if (!_isEnStringReverseLookupLoaded) {
-    _enStringReverseLookup = await loadEnStringReverseLookup(path);
+/// Loads the reverse lookup unless [path] is already the loaded one.
+///
+/// Keyed on the path rather than a bool so asking for a different file
+/// reloads; a bool would let whichever call ran first win permanently.
+Future<void> _loadEnStringReverseLookupIfNecessary(
+  ApprovalSession session,
+  String path,
+) async {
+  if (session.intlReverseLookupPath == path ||
+      session.intlReverseLookupPath == manualIntlReverseLookupPath) {
+    return;
   }
-}
-
-Future<void> _loadCommonTypesIfNecessary(Set<Type> commonTypes) async {
-  if (!_isCommonTypesLoaded) {
-    registerTypes(commonTypes);
-    _isCommonTypesLoaded = true;
-  }
+  session.intlReverseLookup = await loadEnStringReverseLookup(path);
+  session.intlReverseLookupPath = path;
 }
 
 /// Manually adds text to the reverse lookup map (instead of loading from file).
@@ -65,13 +64,16 @@ Future<void> addTextToIntlReverseLookup({
   required String stringId,
   required String stringContent,
   bool markEnStringFileAsLoaded = true,
+  ApprovalSession? session,
 }) async {
+  final target = session ?? currentApprovalSession;
+
   if (markEnStringFileAsLoaded) {
-    _isEnStringReverseLookupLoaded = true;
+    target.intlReverseLookupPath = manualIntlReverseLookupPath;
   }
 
   addToReverseLookup(
-    reverseLookupMap: _enStringReverseLookup,
+    reverseLookupMap: target.intlReverseLookup,
     stringId: stringId,
     stringContent: stringContent,
   );
@@ -87,8 +89,7 @@ Future<void> addTextToIntlReverseLookup({
 /// [silent ] is true to suppress output to console and file (should be false inside generated widgetTests).
 /// [verbose] shows explanatory text that explains meta data.
 /// [compareWithPrevious ] is true to compare the current states with previous to display diffs.
-/// [outputExpects] is true to print expect statements to console.
-/// [outputMeta] is true to output data to an approval-test file.
+/// [outputMeta] is true to output an approval-test snapshot instead of expect statements.
 Future<List<String>> collectWidgetsMetaData(
   WidgetTester tester, {
   Set<Type>? widgetTypes,
@@ -97,38 +98,42 @@ Future<List<String>> collectWidgetsMetaData(
   bool silent = false,
   bool verbose = true,
   bool compareWithPrevious = true,
-  bool? outputExpects,
   bool? outputMeta,
+  ApprovalSession? session,
 }) async {
-  assert(outputExpects == null || outputMeta == null);
+  final target = session ?? currentApprovalSession;
 
-  registeredNames = widgetNames ?? {};
-
+  if (widgetNames != null) {
+    target.registerNames(widgetNames);
+  }
   if (pathToStrings != null) {
-    await _loadEnStringReverseLookupIfNecessary(pathToStrings);
+    await _loadEnStringReverseLookupIfNecessary(target, pathToStrings);
   }
   if (widgetTypes != null) {
-    await _loadCommonTypesIfNecessary(widgetTypes);
+    target.registerTypes(widgetTypes);
   }
 
+  final registry = target.registry;
   final text = <String>[];
 
   if (!compareWithPrevious) {
-    _previousWidgetMetas = [];
-    _previousExpectStrings = [];
+    target.previousWidgetMetas = [];
+    target.previousExpectStrings = [];
   }
 
-  final widgets = _getWidgetsForExpects(tester, widgetNames ?? <String>{});
+  final widgets = _getWidgetsForExpects(tester, registry);
 
   if (widgets.isEmpty) {
     text.add('No widgets found for approval testing.');
   } else {
     text.addAll(
-      await _generateExpectsForWidgets(
+      _generateExpectsForWidgets(
         widgets,
-        tester: tester,
+        session: target,
+        registry: registry,
         verbose: verbose,
         silent: silent,
+        compareWithPrevious: compareWithPrevious,
         outputType:
             (outputMeta ?? false) ? OutputType.widgetMeta : OutputType.expects,
       ),
@@ -138,27 +143,40 @@ Future<List<String>> collectWidgetsMetaData(
   return text;
 }
 
-Future<List<String>> _generateExpectsForWidgets(
+List<String> _generateExpectsForWidgets(
   List<Widget> widgets, {
-  required WidgetTester tester,
+  required ApprovalSession session,
+  required WidgetRegistry registry,
   required bool verbose,
   required bool silent,
+  required bool compareWithPrevious,
   required OutputType outputType,
-}) async {
+}) {
   final text = <String>[];
 
-  final currentWidgetMetas = _widgetMetasFromWidgets(widgets);
-  final deltaWidgetMetas =
-      _getDeltaWidgetMetas(currentWidgetMetas, _previousWidgetMetas);
+  final currentWidgetMetas = _widgetMetasFromWidgets(widgets, registry);
+  // The rebuilt metas must carry the same registry: isWidgetTypeRegistered
+  // feeds _updateMatcher's predicate, so losing it changes the emitted count.
+  final deltaWidgetMetas = _getDeltaWidgetMetas(
+    currentWidgetMetas,
+    session.previousWidgetMetas,
+    registry,
+  );
   currentWidgetMetas.addAll(deltaWidgetMetas);
-  final currentExpectStrings =
-      _outputStringsFromWidgetMetas(currentWidgetMetas, outputType, verbose);
-  final deltaExpectStrings =
-      _getDeltaExpectStrings(currentExpectStrings, _previousExpectStrings);
+  final currentExpectStrings = _outputStringsFromWidgetMetas(
+    currentWidgetMetas,
+    session,
+    outputType,
+    verbose,
+  );
+  final deltaExpectStrings = _getDeltaExpectStrings(
+    currentExpectStrings,
+    session.previousExpectStrings,
+  );
 
   if (!silent) {
     if (deltaExpectStrings.isEmpty) {
-      if (_previousWidgetMetas.isEmpty) {
+      if (session.previousWidgetMetas.isEmpty) {
         text.add('/// No widget with keys or custom types found to test');
       } else {
         text.add(
@@ -173,8 +191,12 @@ Future<List<String>> _generateExpectsForWidgets(
     }
   }
 
-  _previousWidgetMetas = currentWidgetMetas;
-  _previousExpectStrings = currentExpectStrings;
+  // A self-contained capture must not leave delta memory behind for the next
+  // one; approvalTest() always asks for a full snapshot.
+  if (compareWithPrevious) {
+    session.previousWidgetMetas = currentWidgetMetas;
+    session.previousExpectStrings = currentExpectStrings;
+  }
 
   return text;
 }
@@ -193,13 +215,16 @@ List<String> _getDeltaExpectStrings(
 /// Convert Widgets into [WidgetMeta]s
 ///
 /// Result contains no duplicates (because duplicate [WidgetMeta]s result in duplicate generated tests
-List<WidgetMeta> _widgetMetasFromWidgets(List<Widget> widgets) {
+List<WidgetMeta> _widgetMetasFromWidgets(
+  List<Widget> widgets,
+  WidgetRegistry registry,
+) {
   final widgetMetas = <WidgetMeta>[];
 
   for (final widget in widgets) {
     // Ignore widgets Flutter adds with prefixes (e.g., "[key <")
     if (widget.key == null || _isProperlyFormattedKey(widget)) {
-      final widgetMeta = WidgetMeta(widget: widget);
+      final widgetMeta = WidgetMeta(widget: widget, registry: registry);
       if (!widgetMetas.contains(widgetMeta)) {
         widgetMetas.add(widgetMeta);
       }
@@ -227,6 +252,7 @@ enum OutputType {
 /// Generates expect() strings from [WidgetMeta]s. Sorts strings in order of [_ExpectTypeOrder]
 List<String> _outputStringsFromWidgetMetas(
   List<WidgetMeta> widgetMetas,
+  ApprovalSession session,
   OutputType outputType,
   bool verbose,
 ) {
@@ -234,7 +260,8 @@ List<String> _outputStringsFromWidgetMetas(
   final result = <String>[];
 
   for (final widgetMeta in widgetMetas) {
-    final expectMetaFromWidgetMeta = _expectMetaFromWidgetMeta(widgetMeta);
+    final expectMetaFromWidgetMeta =
+        _expectMetaFromWidgetMeta(widgetMeta, session);
     expectMetas.add(expectMetaFromWidgetMeta);
   }
 
@@ -265,7 +292,8 @@ List<String> _outputStringsFromWidgetMetas(
 
     late final List<String> expectStringsFromWidgetMeta;
     if (outputType == OutputType.expects) {
-      expectStringsFromWidgetMeta = _expectStringsFromExpectMeta(expectMeta);
+      expectStringsFromWidgetMeta =
+          _expectStringsFromExpectMeta(expectMeta, session);
     } else if (outputType == OutputType.widgetMeta) {
       expectStringsFromWidgetMeta = _metaStringsFromExpectMeta(expectMeta);
     }
@@ -285,6 +313,7 @@ void _outputText(List<String> strings) {
 List<WidgetMeta> _getDeltaWidgetMetas(
   List<WidgetMeta> currentWidgetMetas,
   List<WidgetMeta> previousWidgetMetas,
+  WidgetRegistry registry,
 ) {
   final deltaPreviousWidgetMetas = previousWidgetMetas
       .where((item) => !currentWidgetMetas.contains(item))
@@ -292,7 +321,10 @@ List<WidgetMeta> _getDeltaWidgetMetas(
 
   // Matchers may have changed for the previous tests (e.g., findsOneWidget may now be findNothing), so update
   final updatedDeltaPreviousWidgetMetas = deltaPreviousWidgetMetas
-      .map((widgetMeta) => WidgetMeta(widget: widgetMeta.widget))
+      .map(
+        (widgetMeta) =>
+            WidgetMeta(widget: widgetMeta.widget, registry: registry),
+      )
       .toList();
 
   return updatedDeltaPreviousWidgetMetas;
@@ -305,7 +337,7 @@ List<WidgetMeta> _getDeltaWidgetMetas(
 /// The returned list is in no particular order.
 List<Widget> _getWidgetsForExpects(
   WidgetTester tester,
-  Set<String> widgetNames,
+  WidgetRegistry registry,
 ) {
   final widgets = <Widget>[];
 
@@ -327,8 +359,7 @@ List<Widget> _getWidgetsForExpects(
       result = (widget.key != null &&
               (widget.key.toString().isCustomString ||
                   widget.key.toString().isEnumString)) ||
-          registeredTypes.contains(widget.runtimeType) ||
-          widgetNames.contains(widget.runtimeType.toString()) ||
+          registry.isRegistered(widget.runtimeType) ||
           WidgetMeta.isTextEnabled(widget);
     }
     return result;
@@ -343,7 +374,10 @@ List<Widget> _getWidgetsForExpects(
   return widgets;
 }
 
-List<String> _expectStringsFromExpectMeta(ExpectMeta expectMeta) {
+List<String> _expectStringsFromExpectMeta(
+  ExpectMeta expectMeta,
+  ApprovalSession session,
+) {
   final expects = <String>[];
 
   // Number of attributes (e.g., Type, key, text) to match in expect
@@ -353,11 +387,12 @@ List<String> _expectStringsFromExpectMeta(ExpectMeta expectMeta) {
           (expectMeta.widgetMeta.isWidgetTypeRegistered ? 1 : 0);
 
   if (attributesToMatchCount >= 1) {
-    if (_haveEnString(expectMeta.widgetMeta.widgetText) ||
+    if (_haveEnString(session, expectMeta.widgetMeta.widgetText) ||
         attributesToMatchCount >= 2) {
       expects.addAll(
         _generateExpectWidgets(
           expectMeta.widgetMeta,
+          session,
           attributesToMatchCount,
         ),
       );
@@ -403,12 +438,15 @@ String _generateExpect(WidgetMeta widgetMeta) {
   return generatedExpect;
 }
 
-ExpectMeta _expectMetaFromWidgetMeta(WidgetMeta widgetMeta) {
+ExpectMeta _expectMetaFromWidgetMeta(
+  WidgetMeta widgetMeta,
+  ApprovalSession session,
+) {
   final expectMeta = ExpectMeta(widgetMeta: widgetMeta);
 
   if (widgetMeta.widgetText.isNotEmpty) {
-    if (_haveEnString(widgetMeta.widgetText)) {
-      expectMeta.intlKeys = _enStringReverseLookup[widgetMeta.widgetText];
+    if (_haveEnString(session, widgetMeta.widgetText)) {
+      expectMeta.intlKeys = session.intlReverseLookup[widgetMeta.widgetText];
     }
   }
 
@@ -417,6 +455,7 @@ ExpectMeta _expectMetaFromWidgetMeta(WidgetMeta widgetMeta) {
 
 List<String> _generateExpectWidgets(
   WidgetMeta widgetMeta,
+  ApprovalSession session,
   int attributesToMatch,
 ) {
   final buffer = StringBuffer();
@@ -425,8 +464,8 @@ List<String> _generateExpectWidgets(
   int attributesWrittenToBuffer = 0;
 
   void addTextAttributeToBuffer() {
-    if (_haveEnString(widgetMeta.widgetText)) {
-      intlKeys = _enStringReverseLookup[widgetMeta.widgetText];
+    if (_haveEnString(session, widgetMeta.widgetText)) {
+      intlKeys = session.intlReverseLookup[widgetMeta.widgetText];
       if (intlKeys != null) {
         buffer.write("intl: (s) => s.$intlPlaceHolder");
       }
@@ -553,7 +592,8 @@ String _generateWidgetMeta(
   return result;
 }
 
-bool _haveEnString(dynamic key) => _enStringReverseLookup.containsKey(key);
+bool _haveEnString(ApprovalSession session, dynamic key) =>
+    session.intlReverseLookup.containsKey(key);
 
 /// Meta data for gestures
 /// Per EWP-1519, this is a work in progress

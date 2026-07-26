@@ -1,18 +1,20 @@
-import 'package:approval_tests_flutter/src/widget_meta/collect_widgets_meta_data.dart';
 import 'package:approval_tests_flutter/src/widget_meta/matcher_types.dart';
-import 'package:approval_tests_flutter/src/widget_meta/register_types.dart';
+import 'package:approval_tests_flutter/src/widget_meta/widget_registry.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Meta data for widget selected for inclusion in tests
 class WidgetMeta {
+  /// The registry is passed in rather than read from an ambient session so a
+  /// rebuilt meta cannot silently lose [isWidgetTypeRegistered] — that flag
+  /// feeds the predicate in [_updateMatcher] and therefore the emitted count.
   WidgetMeta({
     required this.widget,
+    WidgetRegistry registry = WidgetRegistry.empty,
   }) {
     _updateWidgetKey();
     widgetType = widget.runtimeType;
-    isWidgetTypeRegistered = registeredTypes.contains(widgetType) ||
-        registeredNames.contains(widgetType.toString());
+    isWidgetTypeRegistered = registry.isRegistered(widgetType);
     _updateWidgetText();
     _updateMatcher();
 
@@ -63,9 +65,6 @@ class WidgetMeta {
     if (widget is Text) {
       final text = widget as Text;
       widgetText = text.data ?? '';
-    } else if (widget is TextSpan) {
-      final text = widget as TextSpan;
-      widgetText = text.text ?? '';
     } else {
       widgetText = '';
     }
@@ -75,7 +74,7 @@ class WidgetMeta {
 
   static bool isTextEnabled(Widget widget) {
     final runtimeType = widget.runtimeType;
-    return runtimeType == Text || runtimeType == TextSpan;
+    return runtimeType == Text;
   }
 
   /// Perform a test on the widget and store its result
@@ -167,9 +166,18 @@ extension KeyString on String {
   bool get isValueKeyString => this.startsWith('[<') && this.endsWith('>]');
 }
 
+/// What the parsed [WidgetMeta.keyString] represents.
+///
+/// Every member describes the *string form* the key was parsed into, not the
+/// runtime key object.
 enum KeyType {
-  enumValue, // String represents an enum, NOT a ValueKey(<enum value>)
-  stringValueKey, // String represents a ValueKey(<string value>)
-  functionValueKey, // String represents a ValueKey(<function value>)
+  /// A bare enum value such as `MyKeys.submit` — not a `ValueKey` wrapping one.
+  enumValue,
+
+  /// A `ValueKey` holding a string.
+  stringValueKey,
+
+  /// A `ValueKey` holding a function call such as `keys.row(2)`.
+  functionValueKey,
   unknown;
 }
