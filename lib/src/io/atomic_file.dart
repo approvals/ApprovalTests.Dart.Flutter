@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:approval_tests/approval_tests.dart';
 import 'package:path/path.dart' as p;
@@ -61,10 +62,14 @@ Future<void> writeFileAtomically({
   required String contents,
   Future<void> Function(File from, File to) replace = replaceFileWithRetry,
 }) async {
+  // Isolates of one process share a pid, and each gets its own copy of the
+  // counter, so both are needed to keep concurrent writers off one scratch
+  // file.
   final temporary = File(
     p.join(
       target.parent.path,
-      '${p.basename(target.path)}.$pid.${_tempFileCounter++}.tmp',
+      '${p.basename(target.path)}.$pid.'
+      '${Isolate.current.hashCode}.${_tempFileCounter++}.tmp',
     ),
   );
 
@@ -77,7 +82,7 @@ Future<void> writeFileAtomically({
       'package:approval_tests_flutter: could not update ${target.path} '
       '(${error.message}); continuing without it.',
     );
-    if (temporary.existsSync()) {
+    if (await temporary.exists()) {
       await temporary.delete();
     }
   }

@@ -35,7 +35,16 @@
   `registerTypes` call otherwise stays in effect for every later group in the
   file and changes their snapshots.
 - `registerTypes` keeps its signature but now writes into the current session.
+- `printExpects(widgetNames: ...)` adds to the session's registered names
+  instead of replacing them, so a narrower set no longer hides names discovered
+  by `setUpAll`. This affects console output only, never an approved file.
 - Added `path` as a direct dependency; it was already resolved transitively.
+
+### Removed
+
+- `loadWidgetNames()` and the `StringApprovedExtension.endWithNewline` helper
+  in `src/common.dart`, both unused after the discovery rewrite. Neither was
+  exported from the package's public API.
 
 Snapshot output is unchanged. No `*.approved.txt` needs re-approving.
 
