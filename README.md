@@ -147,11 +147,26 @@ Register your custom widget types to include them in approval snapshots and to
 use the `expectWidget` / `tapWidget` finder helpers:
 
 ```dart
-    registerTypes({MyButton, MyCard});
+    setUpAll(() async {
+      await ApprovalWidgets.setUpAll();
+      registerTypes({MyButton, MyCard});
+    });
+    tearDownAll(ApprovalWidgets.tearDownAll);
 
     tester.expectWidget(key: MyKeys.submit, matcher: findsOneWidget);
     await tester.tapWidget(intl: (_) => 'Submit');
 ```
+
+Register from `setUpAll`. Registrations, the discovered class names, the intl
+string holder set through `WidgetTesterExtension.s`, and the previous-capture
+memory all belong to one capture session scoped to the
+`setUpAll` → `tearDownAll` window.
+
+`ApprovalWidgets.tearDownAll()` is optional: leave it out and state persists for
+the whole test process, exactly as before 1.5.0. Add it when one test file has
+groups with different registrations — without it, a `registerTypes` call in one
+group is still in effect for every later group in that file, which changes
+their snapshots.
 
 For backwards compatibility, `tapWidget()` calls `pumpAndSettle()` after the
 tap. Flutter's default settle timeout is ten minutes, so an indeterminate
@@ -246,7 +261,7 @@ Add the following to your `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  approval_tests_flutter: ^1.4.1
+  approval_tests_flutter: ^1.5.0
 ```
 
 ## 👀 Getting Started

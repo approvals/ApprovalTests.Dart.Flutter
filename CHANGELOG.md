@@ -1,3 +1,44 @@
+## 1.5.0
+
+### Fixed
+
+- Widget-name cache writes are now atomic. `flutter test` runs test files in
+  parallel processes that share one cache file, so the previous single write
+  was observable by another process as a truncated file — a short read drops
+  names, which silently drops lines from a snapshot.
+- Widget-name discovery no longer throws `ArgumentError` on Windows.
+  `AnalysisContextCollection` rejects a path that is not absolute *and*
+  normalized; the `lib` and Dart SDK paths were built by string concatenation.
+- Cache freshness is validated by fingerprint instead of newest modification
+  time. The old check missed a deleted non-newest file, a checkout with
+  backdated timestamps, and a timestamp-preserving rename, and it treated a
+  write racing an edit as fresh. Any cache problem is now a rescan, never an
+  error.
+- The cache is byte-stable: discovered sources and class names are sorted.
+- The analysis context is disposed, so its driver no longer outlives `setUpAll`.
+- Blocking `listSync` / `createSync` / `writeAsStringSync` calls inside the
+  async setup path are now awaited.
+- `printExpects(widgetTypes: ...)` no longer ignores its argument after the
+  first call. A one-shot latch meant only the first set was ever registered.
+- The intl reverse lookup reloads when `pathToStrings` changes. Its "already
+  loaded" flag was checked but never set, so the file was re-read on every
+  call, and a different path could never win.
+
+### Changed
+
+- Capture state — registered types and names, previous-capture memory, the
+  localization lookup, and the intl string holder — moved out of library
+  globals into an explicit session.
+- Added `ApprovalWidgets.tearDownAll()`, which discards that session. It is
+  **optional**: omitting it reproduces the previous behaviour exactly. Add it
+  when one test file has groups with different registrations, since a
+  `registerTypes` call otherwise stays in effect for every later group in the
+  file and changes their snapshots.
+- `registerTypes` keeps its signature but now writes into the current session.
+- Added `path` as a direct dependency; it was already resolved transitively.
+
+Snapshot output is unchanged. No `*.approved.txt` needs re-approving.
+
 ## 1.4.1
 
 - Added `WidgetActionPumpPolicy` so `tapWidget()` callers can explicitly choose no pump, one pump, a fixed-duration pump, or bounded settling.

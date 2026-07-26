@@ -1,4 +1,5 @@
 import 'package:approval_tests/approval_tests.dart';
+import 'package:approval_tests_flutter/src/approval_session.dart';
 import 'package:approval_tests_flutter/src/get_widget_names.dart';
 import 'package:approval_tests_flutter/src/widget_meta/collect_widgets_meta_data.dart'
     as widgets_meta_data;
@@ -10,8 +11,6 @@ export 'package:approval_tests_flutter/src/widget_meta/register_types.dart'
     show registerTypes;
 export 'package:approval_tests_flutter/src/widget_meta/widget_tester_extension.dart';
 
-Set<String>? _widgetNames;
-
 /// Top-level helpers for configuring approval-based widget tests.
 class ApprovalWidgets {
   /// File path extractor used when building widget approval namers.
@@ -21,15 +20,33 @@ class ApprovalWidgets {
   /// Builds a database of the project's class names so approval tests can match
   /// widgets by their custom type.
   ///
-  /// Typically called from within a flutter_test `setUpAll` callback.
+  /// Typically called from within a flutter_test `setUpAll` callback. It only
+  /// records the discovered names; anything registered beforehand — custom
+  /// types, the intl string holder — is left in place.
   static Future<Set<String>> setUpAll() async {
     final names = await getWidgetNames();
-    _widgetNames = names;
+    currentApprovalSession
+      ..widgetNames = names
+      ..registerNames(names);
     return names;
   }
 
+  /// Discards capture state: registered types and names, the previous-capture
+  /// memory, the localization lookup, and the intl string holder.
+  ///
+  /// Optional. Omitting it keeps state for the life of the test process, which
+  /// is how releases before 1.5.0 behaved. Safe to call repeatedly and safe to
+  /// call without a preceding [setUpAll].
+  ///
+  /// Pass it directly to flutter_test:
+  ///
+  /// ```dart
+  /// tearDownAll(ApprovalWidgets.tearDownAll);
+  /// ```
+  static void tearDownAll() => resetApprovalSession();
+
   /// Cached set of project widget names discovered during [setUpAll].
-  static Set<String>? get widgetNames => _widgetNames;
+  static Set<String>? get widgetNames => currentApprovalSession.widgetNames;
 }
 
 Future<void> _runApprovalTest(
@@ -49,7 +66,7 @@ Future<void> _runApprovalTest(
 extension WidgetTesterApprovedExtension on WidgetTester {
   /// Returns the widget-tree meta data used as the approval snapshot.
   Future<String> get widgetsString async {
-    assert(_widgetNames != null, '''
+    assert(ApprovalWidgets.widgetNames != null, '''
     Looks like ApprovalWidgets.setUpAll() was not called before running an approvalTest. Typically,
     this issue is solved by calling it from within setUpAll:
 

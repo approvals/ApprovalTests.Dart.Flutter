@@ -1,18 +1,20 @@
-import 'package:approval_tests_flutter/src/widget_meta/collect_widgets_meta_data.dart';
 import 'package:approval_tests_flutter/src/widget_meta/matcher_types.dart';
-import 'package:approval_tests_flutter/src/widget_meta/register_types.dart';
+import 'package:approval_tests_flutter/src/widget_meta/widget_registry.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Meta data for widget selected for inclusion in tests
 class WidgetMeta {
+  /// The registry is passed in rather than read from an ambient session so a
+  /// rebuilt meta cannot silently lose [isWidgetTypeRegistered] — that flag
+  /// feeds the predicate in [_updateMatcher] and therefore the emitted count.
   WidgetMeta({
     required this.widget,
+    WidgetRegistry registry = WidgetRegistry.empty,
   }) {
     _updateWidgetKey();
     widgetType = widget.runtimeType;
-    isWidgetTypeRegistered = registeredTypes.contains(widgetType) ||
-        registeredNames.contains(widgetType.toString());
+    isWidgetTypeRegistered = registry.isRegistered(widgetType);
     _updateWidgetText();
     _updateMatcher();
 

@@ -1,18 +1,23 @@
 # ApprovalTests.Dart.Flutter Roadmap
 
-Last updated: 2026-07-15
+Last updated: 2026-07-26
 
 Current baseline:
 
 - latest published package:
   [`approval_tests_flutter 1.3.1`](https://pub.dev/packages/approval_tests_flutter);
-- repository baseline: `refactor/approval-experience` at `e8e6de2`;
-- current package version: `1.4.1`;
+- repository baseline: `refactor/approval-experience` at `c5cd700`, with the
+  1.5.0 delivery slices completed in the current working tree;
+- current package version: `1.5.0`;
 - current core constraint: `approval_tests: ^1.3.6`, while the published core
   package is `1.4.3`;
 - version 1.4.1 adds `WidgetActionPumpPolicy` with explicit no-pump,
   single-frame, fixed-duration, and bounded-settling behavior for `tapWidget()`
   while keeping the 1.x default source compatible;
+- version 1.5.0 makes the widget-name cache atomic, byte-stable, and validated
+  by fingerprint, fixes an `ArgumentError` on Windows caused by unnormalized
+  analyzer paths, and moves capture state into an explicit session with an
+  optional `ApprovalWidgets.tearDownAll()`;
 - `analyzer` is a runtime dependency because `ApprovalWidgets.setUpAll()`
   currently parses the consuming project's `lib/` sources at test runtime;
 - compatibility policy: existing text snapshots and golden names remain stable
@@ -125,14 +130,42 @@ behavior immediately would be a breaking change, so migration must be additive.
 
 ### Capture-state isolation — P0
 
-- [ ] Move registered widget names/types, previous metadata, previous generated
+Status: complete for the 1.5.0 development tree.
+
+- [x] Move registered widget names/types, previous metadata, previous generated
       expectations, and localization lookup state into an explicit test session.
-- [ ] Ensure `approvalTest()` always captures a complete snapshot without
+- [x] Ensure `approvalTest()` always captures a complete snapshot without
       mutating state used by another test.
-- [ ] Provide deterministic setup and teardown that restores all library-owned
+- [x] Provide deterministic setup and teardown that restores all library-owned
       state on success and failure.
-- [ ] Cover repeated groups and concurrent zones with isolation regression
+- [x] Cover repeated groups and concurrent zones with isolation regression
       tests even if Flutter currently schedules widget tests serially.
+
+`WidgetRegistry` is passed into `WidgetMeta` explicitly rather than read from an
+ambient session. There are only two construction sites in the library, both
+already inside functions that have the registry; an ambient read would also make
+the "two sessions see different registries" test unwritable, and that test is
+the only thing that proves no capture state survives outside a session.
+
+Both construction sites matter, including the one in `_getDeltaWidgetMetas`
+that rebuilds metas from the previous capture. Dropping the registry there
+flips `isWidgetTypeRegistered`, which feeds `_updateMatcher`'s predicate and
+therefore the emitted `count:`.
+
+Zone scoping was considered and rejected. `flutter test` gives each test file
+its own process and runs tests within a file serially, `Zone.current[...]`
+walks the parent chain on every lookup — once per widget — and, decisively, a
+`runZoned` opened inside `setUpAll` closes when that callback returns, so the
+value would never be visible from a test body. The two-session test is a
+stronger guarantee than a zone test: it passes only if no state lives outside
+the session it was given.
+
+The session spans `setUpAll` → `tearDownAll` rather than each test.
+`registerTypes` is additive and process-global today, so a per-test reset would
+break consumers that register once in `setUpAll`. `setUpAll` records the
+discovered names without resetting, so state established before it — a
+`registerTypes` call or `WidgetTesterExtension.s` at the top of `main()` —
+survives.
 
 ### Widget-name discovery and cache safety — P0
 
