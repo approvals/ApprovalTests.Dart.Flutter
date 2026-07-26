@@ -197,6 +197,49 @@ are supplied, `pumpPolicy` takes precedence.
 Approval capture helpers (`approvalTest`, `approvalSemantics`, and
 `approvalGolden`) never pump or settle implicitly.
 
+## 🔎 Widget-name discovery and its cache
+
+`ApprovalWidgets.setUpAll()` parses your project's `lib/` and collects the
+public class names, so a snapshot can label a widget by its own type rather
+than by the nearest framework type. Results are cached in
+`test/.approval_tests/class_names.txt`, which is generated and belongs in
+`.gitignore`.
+
+The cache is validated by fingerprint, not by modification time. The stored
+token covers a schema revision, the package root, the Dart SDK path and
+version, and every scanned source's relative path, size, and timestamp. A
+modification-time check alone would miss three ordinary cases — deleting a file
+that is not the newest, checking out a branch whose files carry older
+timestamps, and renaming with timestamps preserved — and each of those would
+leave the cache silently stale, dropping lines from a snapshot.
+
+Consequences worth knowing:
+
+- A fresh CI checkout rewrites every timestamp, so CI always rescans. That is
+  correct rather than a regression.
+- Any cache problem — missing, truncated, written by an older version, copied
+  from another checkout — is a rescan, never an error. A cache must not fail
+  your test run.
+- The cache is written through a temporary file and a rename. `flutter test`
+  runs test files in parallel processes that share one cache file, so a direct
+  write is observable by another process as a truncated file.
+- Only the fingerprint digest is stored, never the package root or SDK path, so
+  the file carries no absolute paths from your machine.
+
+### Why `analyzer` is a runtime dependency
+
+`package:analyzer` sits in `dependencies`, not `dev_dependencies`, and that is
+deliberate. Discovery runs inside *your* `setUpAll` and parses *your* sources.
+Pub does not install a published package's dev dependencies for downstream
+consumers, so moving `analyzer` there would make the import unresolvable in
+every consumer's test run.
+
+It can only move once discovery stops happening at test time — either a
+build-time step that checks in the generated name list, or a separate
+`_gen`-style package you add as a dev dependency. Until then, note that
+`analyzer` and `_fe_analyzer_shared` are the heaviest transitive dependencies
+this package brings in.
+
 ## 📦 Installation
 
 Add the following to your `pubspec.yaml` file:

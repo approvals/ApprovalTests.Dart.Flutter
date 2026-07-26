@@ -30,6 +30,10 @@ dependencies:
     sdk: flutter
   approval_tests: ^1.3.6
   analyzer: ">=12.0.0 <14.0.0"
+  path: ^1.9.0
 
 dev_dependencies:
   sizzle_lints: ^2.1.7
+  # Widget-name discovery is pure Dart, so its unit tests run under `dart test`
+  # without booting a flutter_tester engine.
+  test: ^1.25.0

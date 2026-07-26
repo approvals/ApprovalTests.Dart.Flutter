@@ -136,16 +136,39 @@ behavior immediately would be a breaking change, so migration must be additive.
 
 ### Widget-name discovery and cache safety — P0
 
-- [ ] Replace synchronous directory enumeration and cache writes inside async
+Status: complete for the 1.5.0 development tree.
+
+- [x] Replace synchronous directory enumeration and cache writes inside async
       setup with consistently awaited filesystem operations.
-- [ ] Sort discovered source files and class names before writing the cache.
-- [ ] Write the cache atomically and handle an interrupted or malformed cache
+- [x] Sort discovered source files and class names before writing the cache.
+- [x] Write the cache atomically and handle an interrupted or malformed cache
       as a recoverable miss.
-- [ ] Include the package root, analyzer-compatible SDK identity, and relevant
+- [x] Include the package root, analyzer-compatible SDK identity, and relevant
       source timestamps in cache validation.
-- [ ] Document why `analyzer` cannot move to `dev_dependencies` while runtime
+- [x] Document why `analyzer` cannot move to `dev_dependencies` while runtime
       discovery remains public behavior.
 - [ ] Measure setup time before adding caching or isolate complexity.
+
+Two defects beyond the listed items were found and fixed here:
+
+- `AnalysisContextCollection` rejects a path that is not absolute *and*
+  normalized. Discovery built `'$root/lib'` and `'$flutterRoot/bin/cache/dart-sdk'`
+  by concatenation, which throws `ArgumentError` on Windows — a platform this
+  package declares support for. All paths now go through `p.normalize`.
+- The collection was never disposed, leaving an analysis driver alive for the
+  whole test process.
+
+Validation is by fingerprint rather than modification time. A newest-mtime
+comparison misses a deleted non-newest file, a backdated checkout, and a
+timestamp-preserving rename; it is also defeated by one-second filesystem
+granularity, and it treats a TOCTOU write as fresh. Equality on a digest over
+`(relative path, mtime, size)` plus schema, package root, SDK path, and SDK
+version has none of those holes. Accepted consequence: a CI checkout rewrites
+timestamps, so CI always rescans.
+
+The analyzer version cannot be read at runtime, so `cacheSchemaVersion` stands
+in for it; `.ai/src/rules/safe-changes.md` requires bumping it alongside the
+`analyzer` constraint.
 
 Acceptance criteria for Milestone 0:
 
