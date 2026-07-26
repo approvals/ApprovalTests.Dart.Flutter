@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:approval_tests/approval_tests.dart';
 import 'package:path/path.dart' as p;
 
+const _errorAccessDenied = 5;
+const _errorSharingViolation = 32;
+const _errorLockViolation = 33;
+
 /// Windows error codes raised when another process holds the destination open.
 const _retryableWindowsRenameErrors = {
-  5, // ERROR_ACCESS_DENIED
-  32, // ERROR_SHARING_VIOLATION
-  33, // ERROR_LOCK_VIOLATION
+  _errorAccessDenied,
+  _errorSharingViolation,
+  _errorLockViolation,
 };
 
 const _maxRenameAttempts = 100;

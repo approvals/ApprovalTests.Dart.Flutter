@@ -169,9 +169,18 @@ extension KeyString on String {
   bool get isValueKeyString => this.startsWith('[<') && this.endsWith('>]');
 }
 
+/// What the parsed [WidgetMeta.keyString] represents.
+///
+/// Every member describes the *string form* the key was parsed into, not the
+/// runtime key object.
 enum KeyType {
-  enumValue, // String represents an enum, NOT a ValueKey(<enum value>)
-  stringValueKey, // String represents a ValueKey(<string value>)
-  functionValueKey, // String represents a ValueKey(<function value>)
+  /// A bare enum value such as `MyKeys.submit` — not a `ValueKey` wrapping one.
+  enumValue,
+
+  /// A `ValueKey` holding a string.
+  stringValueKey,
+
+  /// A `ValueKey` holding a function call such as `keys.row(2)`.
+  functionValueKey,
   unknown;
 }
