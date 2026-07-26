@@ -4,7 +4,7 @@ import 'package:approval_tests/approval_tests.dart';
 import 'package:approval_tests_flutter/src/get_widget_names.dart';
 import 'package:approval_tests_flutter/src/io/atomic_file.dart';
 import 'package:approval_tests_flutter/src/widget_names/widget_name_cache.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 /// Creates a temp package root with its symlinks resolved.

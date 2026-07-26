@@ -34,6 +34,3 @@ dependencies:
 
 dev_dependencies:
   sizzle_lints: ^2.1.7
-  # Widget-name discovery is pure Dart, so its unit tests run under `dart test`
-  # without booting a flutter_tester engine.
-  test: ^1.25.0

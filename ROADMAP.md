@@ -180,7 +180,32 @@ Status: complete for the 1.5.0 development tree.
       source timestamps in cache validation.
 - [x] Document why `analyzer` cannot move to `dev_dependencies` while runtime
       discovery remains public behavior.
-- [ ] Measure setup time before adding caching or isolate complexity.
+- [x] Measure setup time before adding caching or isolate complexity.
+
+Measured on macOS arm64, Dart 3.12.2, analyzer 12.1.0, two interleaved passes
+per size so first-call warmup is not attributed to whichever size ran first:
+
+| pass | files | walk+stat | construct | parse | dispose |
+| --- | --- | --- | --- | --- | --- |
+| 1 (cold) | 16 | 14 ms | 215 ms | 166 ms | 5 ms |
+| 1 (cold) | 500 | 36 ms | 8 ms | 181 ms | 1 ms |
+| 2 (warm) | 16 | 2 ms | 16 ms | 43 ms | 0 ms |
+| 2 (warm) | 500 | 23 ms | 4 ms | 125 ms | 0 ms |
+
+Roughly 380 ms of the first call is one-time analyzer warmup — SDK summary
+loading and JIT — spread across construction and parsing. Warm, 16 files cost
+~61 ms and 500 files ~152 ms, so the marginal parse cost is about 0.17 ms per
+file.
+
+Two conclusions. The cache earns its complexity: a hit skips the whole cold
+path. **An isolate does not**, and the roadmap should stop listing it: the
+dominant cost is per-process analyzer warmup, which an isolate pays as well —
+and pays separately, since it would not share the loaded SDK summary. File
+count is a weak second-order term.
+
+This partly refutes the hypothesis that construction alone dominates. It does
+dominate the first call, but parsing carries a comparable share of warmup, and
+parse time does scale with file count — just too weakly to matter.
 
 Two defects beyond the listed items were found and fixed here:
 

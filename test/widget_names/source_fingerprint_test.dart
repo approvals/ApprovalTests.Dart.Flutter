@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:approval_tests_flutter/src/widget_names/source_fingerprint.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 /// Creates a temp package root with its symlinks resolved.

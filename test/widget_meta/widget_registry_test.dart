@@ -1,5 +1,5 @@
 import 'package:approval_tests_flutter/src/widget_meta/widget_registry.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 final class _Marker {}
 
