@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// Private so `runtimeType.toString()` cannot collide with a class discovered
 /// in this package's own `lib/`.
 class _MarkerBox extends StatelessWidget {
-  const _MarkerBox();
+  const _MarkerBox({super.key});
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
@@ -141,12 +141,14 @@ void main() {
       await _pumpMarker(tester);
       registerTypes({_MarkerBox});
 
-      final meta = WidgetMeta(widget: const _MarkerBox());
+      final meta = WidgetMeta(
+        widget: const _MarkerBox(key: ValueKey<String>('marker')),
+      );
 
       expect(meta.isWidgetTypeRegistered, isFalse);
       expect(
         WidgetMeta(
-          widget: const _MarkerBox(),
+          widget: const _MarkerBox(key: ValueKey<String>('marker')),
           registry: const WidgetRegistry(types: {_MarkerBox}),
         ).isWidgetTypeRegistered,
         isTrue,
@@ -154,7 +156,7 @@ void main() {
     });
 
     testWidgets('a full capture leaves no delta memory behind', (tester) async {
-      await ApprovalWidgets.setUpAll();
+      currentApprovalSession.widgetNames = {};
       registerTypes({_MarkerBox});
       await _pumpMarker(tester);
 
@@ -175,7 +177,7 @@ void main() {
     tearDown(ApprovalWidgets.tearDownAll);
 
     testWidgets('a later printExpects registers its own types', (tester) async {
-      await ApprovalWidgets.setUpAll();
+      currentApprovalSession.widgetNames = {};
       await _pumpMarker(tester);
 
       await tester.printExpects(widgetTypes: {SizedBox});

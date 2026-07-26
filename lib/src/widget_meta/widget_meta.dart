@@ -65,9 +65,6 @@ class WidgetMeta {
     if (widget is Text) {
       final text = widget as Text;
       widgetText = text.data ?? '';
-    } else if (widget is TextSpan) {
-      final text = widget as TextSpan;
-      widgetText = text.text ?? '';
     } else {
       widgetText = '';
     }
@@ -77,7 +74,7 @@ class WidgetMeta {
 
   static bool isTextEnabled(Widget widget) {
     final runtimeType = widget.runtimeType;
-    return runtimeType == Text || runtimeType == TextSpan;
+    return runtimeType == Text;
   }
 
   /// Perform a test on the widget and store its result

@@ -21,8 +21,11 @@ const _renameRetryDelay = Duration(milliseconds: 1);
 int _tempFileCounter = 0;
 
 /// Whether [error] is a transient Windows lock that a retry can clear.
-bool isRetryableRenameError(Object error) =>
-    Platform.isWindows &&
+bool isRetryableRenameError(
+  Object error, {
+  bool? isWindows,
+}) =>
+    (isWindows ?? Platform.isWindows) &&
     error is PathAccessException &&
     _retryableWindowsRenameErrors.contains(error.osError?.errorCode);
 
@@ -31,13 +34,24 @@ bool isRetryableRenameError(Object error) =>
 /// On POSIX a same-directory rename is atomic and never needs a retry. On
 /// Windows an antivirus scanner, the search indexer, or a parallel
 /// `flutter_tester` can hold the destination open briefly.
-Future<void> replaceFileWithRetry(File from, File to) async {
+Future<void> replaceFileWithRetry(
+  File from,
+  File to, {
+  bool? isWindows,
+  Future<void> Function(File from, String toPath)? rename,
+}) async {
+  final renameFile = rename ??
+      (File source, String destination) async {
+        await source.rename(destination);
+      };
+
   for (var attempt = 1; attempt <= _maxRenameAttempts; attempt++) {
     try {
-      await from.rename(to.path);
+      await renameFile(from, to.path);
       return;
     } on FileSystemException catch (error) {
-      if (attempt == _maxRenameAttempts || !isRetryableRenameError(error)) {
+      if (attempt == _maxRenameAttempts ||
+          !isRetryableRenameError(error, isWindows: isWindows)) {
         rethrow;
       }
       await Future<void>.delayed(_renameRetryDelay);

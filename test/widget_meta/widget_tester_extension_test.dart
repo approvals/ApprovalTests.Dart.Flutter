@@ -7,7 +7,95 @@ import 'package:flutter_test/flutter_test.dart';
 const _tapButtonKey = ValueKey<String>('tap-button');
 
 void main() {
+  group('findBy and expectWidget', () {
+    tearDown(ApprovalWidgets.tearDownAll);
+
+    testWidgets('finds default, literal, localized, typed, and keyed widgets',
+        (tester) async {
+      WidgetTesterExtension.s = _Strings();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Column(
+            children: [
+              Text('Hello', key: ValueKey<String>('hello')),
+              Icon(Icons.add),
+            ],
+          ),
+        ),
+      );
+
+      expect(tester.findBy(), findsOneWidget);
+      expect(tester.findBy(text: 'Hello'), findsOneWidget);
+      expect(tester.findBy(intl: (s) => s.hello), findsOneWidget);
+      expect(
+        tester.findBy(
+          text: 'Hello',
+          widgetType: Text,
+          key: const ValueKey<String>('hello'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.findBy(
+          widgetType: Icon,
+          key: const ValueKey<String>('hello'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.findBy(widgetType: Icon, text: 'ignored'), findsOneWidget);
+      tester.expectWidget(text: 'Hello');
+      tester.expectWidget(widgetType: Icon);
+    });
+
+    testWidgets('uses localized text when validating a keyed Text',
+        (tester) async {
+      WidgetTesterExtension.s = _Strings();
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Text('Hello', key: ValueKey<String>('hello')),
+        ),
+      );
+
+      expect(
+        tester.findBy(
+          intl: (s) => s.hello,
+          widgetType: Text,
+          key: const ValueKey<String>('hello'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('rejects simultaneous literal and localized text',
+        (tester) async {
+      expect(
+        () => tester.findBy(
+          intl: (_) => 'Hello',
+          text: 'Hello',
+        ),
+        throwsAssertionError,
+      );
+    });
+  });
+
   group('tapWidget pump policy', () {
+    test('constructs every pump policy at runtime', () {
+      WidgetActionPumpPolicy Function() none = WidgetActionPumpPolicy.none;
+      WidgetActionPumpPolicy Function() once = WidgetActionPumpPolicy.once;
+      WidgetActionPumpPolicy Function() settled =
+          WidgetActionPumpPolicy.untilSettled;
+      WidgetActionPumpPolicy Function(Duration) forDuration =
+          WidgetActionPumpPolicy.forDuration;
+      final policies = [
+        none(),
+        once(),
+        forDuration(Duration.zero),
+        settled(),
+      ];
+
+      expect(policies, everyElement(isA<WidgetActionPumpPolicy>()));
+    });
+
     testWidgets('does not pump when the policy is none', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: _CounterButton()));
 
@@ -91,6 +179,10 @@ void main() {
       expect(find.text('Count: 0'), findsOneWidget);
     });
   });
+}
+
+final class _Strings {
+  String get hello => 'Hello';
 }
 
 Future<void> _tapWith(

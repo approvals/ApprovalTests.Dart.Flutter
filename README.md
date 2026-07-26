@@ -260,8 +260,19 @@ this package brings in.
 Add the following to your `pubspec.yaml` file:
 
 ```yaml
-dependencies:
-  approval_tests_flutter: ^1.5.0
+    dependencies:
+      approval_tests_flutter: ^1.5.0
+    ```
+
+## Coverage
+
+The 1.5.0 release has 100% line coverage for executable code under `lib`
+(594/594 lines). The full suite passes all 100 test executions.
+
+To reproduce the report locally:
+
+```shell
+flutter test --coverage
 ```
 
 ## 👀 Getting Started

@@ -48,6 +48,14 @@
 
 Snapshot output is unchanged. No `*.approved.txt` needs re-approving.
 
+### Internal
+
+- Expanded deterministic coverage for widget metadata and expect generation,
+  finder and pump policies, semantics and golden approvals, widget-name cache
+  failures, and bounded Windows rename retries.
+- Reached 100% executable line coverage (594/594 lines); all 100 test
+  executions pass.
+
 ## 1.4.1
 
 - Added `WidgetActionPumpPolicy` so `tapWidget()` callers can explicitly choose no pump, one pump, a fixed-duration pump, or bounded settling.

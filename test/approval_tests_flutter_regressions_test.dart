@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:approval_tests_flutter/approval_tests_flutter.dart';
+import 'package:approval_tests_flutter/src/widget_meta/expect_meta.dart';
 import 'package:approval_tests_flutter/src/widget_meta/load_string_en.dart';
+import 'package:approval_tests_flutter/src/widget_meta/matcher_types.dart';
 import 'package:approval_tests_flutter/src/widget_meta/semantics_snapshot.dart';
 import 'package:approval_tests_flutter/src/widget_meta/widget_meta.dart';
+import 'package:approval_tests_flutter/src/widget_meta/widget_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -51,6 +54,15 @@ void main() {
         contains('title.toUpperCase()'),
       );
     });
+
+    test('rejects a JSON value that is not an object', () async {
+      final lookupFile = File(lookupFilePath)..writeAsStringSync('[]');
+
+      expect(
+        () => loadEnStringReverseLookup(lookupFile.path),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 
   group('WidgetMeta', () {
@@ -67,6 +79,27 @@ void main() {
       expect(metaA.hashCode, equals(metaB.hashCode));
       final uniqueMetas = <WidgetMeta>{metaA, metaB};
       expect(uniqueMetas.length, 1);
+    });
+
+    test('ExpectMeta reports one and multiple intl matches', () {
+      final expectMeta = ExpectMeta(
+        widgetMeta: WidgetMeta(widget: const Text('Example')),
+      );
+
+      expect(expectMeta.isIntl, isFalse);
+      expect(expectMeta.hasMultipleIntlKeys, isFalse);
+
+      expectMeta.intlKeys = ['first'];
+      expect(expectMeta.isIntl, isTrue);
+      expect(expectMeta.hasMultipleIntlKeys, isFalse);
+
+      expectMeta.intlKeys = ['first', 'second'];
+      expect(expectMeta.hasMultipleIntlKeys, isTrue);
+    });
+
+    test('unknown matcher has a safe fallback and diagnostic name', () {
+      expect(MatcherTypes.unknown.matcher, same(findsNothing));
+      expect(MatcherTypes.unknown.matcherName, '(Unknown)');
     });
   });
 
@@ -95,6 +128,26 @@ void main() {
       final meta = metaFor(const ValueKey('Keys__item__0'));
       expect(meta.keyType, KeyType.functionValueKey);
       expect(meta.keyString, 'Keys.item(0)');
+    });
+
+    test('marks unsupported custom key shapes as unknown', () {
+      final meta = WidgetMeta(
+        widget: Container(key: const ValueKey('Keys__item__0__extra')),
+        registry: const WidgetRegistry(types: {Container}),
+      );
+
+      expect(meta.keyType, KeyType.unknown);
+      expect(meta.keyString, isEmpty);
+      expect(meta.isWidgetTypeRegistered, isTrue);
+    });
+
+    test('describes an unsupported key implementation without echoing it', () {
+      final meta = WidgetMeta(
+        widget: Container(key: UniqueKey()),
+        registry: const WidgetRegistry(types: {Container}),
+      );
+
+      expect(meta.keyString, '<Unknown key type>');
     });
   });
 

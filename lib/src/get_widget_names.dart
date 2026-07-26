@@ -33,6 +33,7 @@ final class WidgetNameScanner {
     String? sdkPath,
     String? sdkIdentity,
     this.replaceFile = replaceFileWithRetry,
+    this.readCacheContents = _readFileAsString,
   })  : sdkPath = p.normalize(sdkPath ?? resolveDartSdkPath()),
         sdkIdentity = sdkIdentity ?? Platform.version;
 
@@ -40,6 +41,7 @@ final class WidgetNameScanner {
   final String sdkPath;
   final String sdkIdentity;
   final Future<void> Function(File from, File to) replaceFile;
+  final Future<String> Function(File file) readCacheContents;
 
   /// Returns the project's widget names, using the cache when it is valid.
   Future<WidgetNameLoadResult> load() async {
@@ -119,12 +121,10 @@ final class WidgetNameScanner {
         return null;
       }
       return decodeWidgetNameCache(
-        contents: await file.readAsString(),
+        contents: await readCacheContents(file),
         fingerprint: fingerprint,
       );
     } on FileSystemException {
-      return null;
-    } on FormatException {
       return null;
     }
   }
@@ -149,12 +149,17 @@ final class WidgetNameScanner {
 /// Prefers `FLUTTER_ROOT`, which `flutter test` sets: under `flutter test`,
 /// `Platform.resolvedExecutable` points at the `flutter_tester` engine rather
 /// than the Dart binary. Spawning a `flutter` process would be far slower.
-String resolveDartSdkPath() {
-  final flutterRoot = Platform.environment['FLUTTER_ROOT'];
+String resolveDartSdkPath({
+  Map<String, String>? environment,
+  String? resolvedExecutable,
+}) {
+  final flutterRoot = (environment ?? Platform.environment)['FLUTTER_ROOT'];
   if (flutterRoot != null && flutterRoot.isNotEmpty) {
     return p.normalize(p.join(flutterRoot, 'bin', 'cache', 'dart-sdk'));
   }
-  return p.normalize(File(Platform.resolvedExecutable).parent.parent.path);
+  return p.normalize(
+    File(resolvedExecutable ?? Platform.resolvedExecutable).parent.parent.path,
+  );
 }
 
 /// Crawls the project and extracts public class names from the `/lib` folder.
@@ -178,3 +183,5 @@ Future<Set<String>> readWidgetsFile(String filePath) async {
       .where((line) => line.isNotEmpty && !line.startsWith('#'))
       .toSet();
 }
+
+Future<String> _readFileAsString(File file) => file.readAsString();

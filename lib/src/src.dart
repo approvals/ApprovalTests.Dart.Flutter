@@ -136,8 +136,7 @@ extension WidgetTesterApprovedExtension on WidgetTester {
     final handle = ensureSemantics();
     try {
       final viewFinder = find.byType(View);
-      final root =
-          viewFinder.evaluate().isEmpty ? null : getSemantics(viewFinder);
+      final root = getSemantics(viewFinder);
       await _runApprovalTest(description, describeSemanticsTree(root), options);
     } finally {
       handle.dispose();

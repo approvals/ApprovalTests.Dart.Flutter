@@ -31,12 +31,14 @@ File _writeSource(Directory root, String relativePath, String contents) {
 WidgetNameScanner _scanner(
   Directory root, {
   Future<void> Function(File from, File to)? replaceFile,
+  Future<String> Function(File file)? readCacheContents,
 }) =>
     WidgetNameScanner(
       location: WidgetNameCacheLocation(packageRoot: root.path),
       sdkPath: resolveDartSdkPath(),
       sdkIdentity: 'fixture-sdk',
       replaceFile: replaceFile ?? replaceFileWithRetry,
+      readCacheContents: readCacheContents ?? ((file) => file.readAsString()),
     );
 
 File _cacheFile(Directory root) =>
@@ -137,6 +139,22 @@ void main() {
       await _scanner(root).load();
 
       expect(_cacheFile(root).existsSync(), isTrue);
+    });
+
+    test('recovers when an existing cache cannot be read', () async {
+      _writeSource(root, 'a.dart', 'class A {}');
+      await _scanner(root).load();
+
+      final result = await _scanner(
+        root,
+        readCacheContents: (file) async => throw FileSystemException(
+          'unreadable',
+          file.path,
+        ),
+      ).load();
+
+      expect(result.fromCache, isFalse);
+      expect(result.names, {'A'});
     });
   });
 
@@ -289,11 +307,45 @@ void main() {
     });
   });
 
+  group('resolveDartSdkPath', () {
+    test('uses FLUTTER_ROOT when it is present', () {
+      expect(
+        resolveDartSdkPath(
+          environment: {'FLUTTER_ROOT': p.join(root.path, 'flutter')},
+        ),
+        p.join(root.path, 'flutter', 'bin', 'cache', 'dart-sdk'),
+      );
+    });
+
+    test('falls back to the resolved executable', () {
+      expect(
+        resolveDartSdkPath(
+          environment: const {},
+          resolvedExecutable: p.join(root.path, 'dart-sdk', 'bin', 'dart'),
+        ),
+        p.join(root.path, 'dart-sdk'),
+      );
+    });
+  });
+
   group('isRetryableRenameError', () {
+    for (final errorCode in [5, 32, 33]) {
+      test('accepts Windows lock error $errorCode', () {
+        expect(
+          isRetryableRenameError(
+            PathAccessException('x', OSError('locked', errorCode)),
+            isWindows: true,
+          ),
+          isTrue,
+        );
+      });
+    }
+
     test('rejects a non-lock failure', () {
       expect(
         isRetryableRenameError(
           const PathAccessException('x', OSError('other', 999)),
+          isWindows: true,
         ),
         isFalse,
       );
@@ -301,6 +353,60 @@ void main() {
 
     test('rejects a non-filesystem error', () {
       expect(isRetryableRenameError(StateError('nope')), isFalse);
+    });
+  });
+
+  group('replaceFileWithRetry', () {
+    test('retries transient Windows locks and then succeeds', () async {
+      final from = File(p.join(root.path, 'from.txt'))
+        ..writeAsStringSync('new');
+      final to = File(p.join(root.path, 'to.txt'))..writeAsStringSync('old');
+      var attempts = 0;
+
+      await replaceFileWithRetry(
+        from,
+        to,
+        isWindows: true,
+        rename: (source, destination) async {
+          attempts++;
+          if (attempts < 3) {
+            throw PathAccessException(
+              destination,
+              const OSError('locked', 32),
+            );
+          }
+          await source.rename(destination);
+        },
+      );
+
+      expect(attempts, 3);
+      expect(to.readAsStringSync(), 'new');
+    });
+
+    test('stops after the bounded retry count', () async {
+      final from = File(p.join(root.path, 'from.txt'))
+        ..writeAsStringSync('new');
+      final to = File(p.join(root.path, 'to.txt'))..writeAsStringSync('old');
+      var attempts = 0;
+
+      await expectLater(
+        replaceFileWithRetry(
+          from,
+          to,
+          isWindows: true,
+          rename: (_, destination) async {
+            attempts++;
+            throw PathAccessException(
+              destination,
+              const OSError('locked', 5),
+            );
+          },
+        ),
+        throwsA(isA<PathAccessException>()),
+      );
+
+      expect(attempts, 100);
+      expect(to.readAsStringSync(), 'old');
     });
   });
 }
