@@ -1,5 +1,15 @@
 ## 1.5.0
 
+### Documentation
+
+- Reworked the package guide with a first Flutter approval test, guidance for
+  choosing approval snapshots versus focused assertions, and a CI policy for
+  reviewing and committing baselines safely.
+- Expanded the executable example with a feature-first orders slice covering
+  dependency-injected state management, typed failures, loading/loaded/error
+  approvals, focused retry and empty-state assertions, and repository lifecycle
+  changes.
+
 ### Fixed
 
 - Widget-name cache writes are now atomic. `flutter test` runs test files in
