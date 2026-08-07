@@ -28,11 +28,22 @@
 
 ## 📖 About
 
-**[Approval Tests](https://approvaltests.com/)** are an alternative to assertions. You’ll find them useful for testing objects with complex values _(such as long strings)_, lots of properties, or collections of objects.
+**[Approval Tests](https://approvaltests.com/)** complement focused assertions by
+capturing a readable snapshot of a larger result and verifying that it has not
+changed. This package can snapshot a Flutter widget tree, accessibility tree,
+or golden image.
 
-`Approval tests` simplify this by taking a snapshot of the results, and confirming that they have not changed.
+Use the smallest assertion that explains the behavior:
 
-In normal unit testing, you say `expect(person.getAge(), 5)`. Approvals allow you to do this when the thing that you want to assert is no longer a primitive but a complex object. `Approvals.verify()` accepts text; for a model with a `toJson()` method, use `Approvals.verifyAsJson(person.toJson())`.
+| Prefer approval testing for | Prefer `expect()` for |
+| --- | --- |
+| A screen with many meaningful widgets | A boolean, count, or calculation |
+| Loading, loaded, empty, and error UI states | One or two exact properties |
+| Accessibility trees and generated output | A business rule with one clear result |
+| Regression coverage before a large refactor | An interaction that must call one dependency |
+
+The two styles work well together: assert a precise state transition with
+`expect()`, then approve the complete rendered state.
 
 I am writing an implementation of **[Approval Tests](https://approvaltests.com/)** in Dart. If anyone wants to help, please **[text](https://t.me/yelmuratoff)** me. 🙏
 
@@ -44,71 +55,132 @@ ApprovalTests is designed for two level: Dart and Flutter. <br>
 
 | Package                                                                                             | Version                                                                                                              | Description                                                               |
 | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [approval_tests](https://github.com/approvals/ApprovalTests.Dart/tree/main/packages/approval_tests) | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests _(main)_            |
+| [approval_tests](https://github.com/approvals/ApprovalTests.Dart)                                  | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests _(main)_            |
 | [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart.Flutter)                   | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter)   | **Flutter** package for approval testing of `widget`, `integration` tests |
 
-## 📋 How it works
+## First Flutter approval test
 
-- The first run of the test automatically creates an `approved` file if there is no such file.
-- If the changed results match the `approved` file perfectly, the test passes.
-- If there's a difference, a `reporter` tool will highlight the mismatch and the test fails.
-- If the test is passed, the `received` file is deleted automatically. You can change this by changing the `deleteReceivedFile` value in `options`. If the test fails, the received file remains for analysis.
+1. Add the package to `dev_dependencies` because it is used from tests:
 
-Instead of writing:
+   ```yaml
+   dev_dependencies:
+     approval_tests_flutter: ^1.5.0
+   ```
 
-```dart
-    testWidgets('home page', (WidgetTester tester) async {
-        await tester.pumpWidget(const MyApp());
-        await tester.pumpAndSettle();
+2. Ignore disposable output, but keep approved baselines in Git:
 
-        expect(find.text('You have pushed the button this many times:'), findsOneWidget);
-        expect(find.text('0'), findsOneWidget);
-        expect(find.byWidgetPredicate(
-            (Widget widget) => widget is Text && widget.data == 'hello' &&
-            widget.key == ValueKey('myKey'),
-        ), findsOneWidget);
-        expect(find.text('Approved Example'), findsOneWidget);
-    });
-```
+   ```gitignore
+   *.received.*
+   **/.approval_tests/
+   ```
 
-Write this:
+3. Create a widget test:
 
-```dart
-    testWidgets('smoke test', (WidgetTester tester) async {
-        await tester.pumpWidget(const MyApp());
-        await tester.pumpAndSettle();
+   ```dart
+   import 'package:approval_tests_flutter/approval_tests_flutter.dart';
+   import 'package:flutter/material.dart';
+   import 'package:flutter_test/flutter_test.dart';
 
-        await tester.approvalTest();
-    });
-```
+   void main() {
+     setUpAll(ApprovalWidgets.setUpAll);
+     tearDownAll(ApprovalWidgets.tearDownAll);
 
-Suppose you wanted to confirm that a page loaded with all the widget you expected. To do this,
-perform an approval test by calling `tester.approvalTest`, and give your test a suitable name:
+     testWidgets('renders the profile', (tester) async {
+       await tester.pumpWidget(
+         const MaterialApp(
+           home: Scaffold(
+             body: Text('Ada Lovelace'),
+           ),
+         ),
+       );
+       await tester.pumpAndSettle();
 
-```dart
-    testWidgets('home page', (WidgetTester tester) async {
-        await tester.pumpWidget(const MyApp());
-        await tester.pumpAndSettle();
+       await tester.approvalTest();
+     });
+   }
+   ```
 
-        await tester.approvalTest(description: 'all widgets load correctly');
-    });
-```
+4. Run the test. The first run creates `*.approved.txt` and passes:
 
-To include your project's custom widget types in your test, and to perform post-test checks, add
-calls to `ApprovalWidgets.setUpAll()` to your tests' `setUpAll` calls, like so:
+   ```shell
+   flutter test test/profile_page_test.dart
+   ```
 
-```dart
-    main() {
-        setUpAll(() async {
-            await ApprovalWidgets.setUpAll();
-        });
-    }
-```
+5. Read the approved file before committing it. It is a test expectation, not
+   disposable generated output. A later mismatch leaves `*.received.txt`,
+   prints a diff, and fails. Review it with:
+
+   ```shell
+   dart run approval_tests:review
+   ```
+
+   Approve the change only when the new output is intentional, rerun the test,
+   and commit the updated approved file with the code that required it.
 
 > Each call to `approvalTest()` writes a **full, self-contained snapshot** of the
 > current widget tree. Calling it several times in one test produces independent
 > snapshots (e.g. before and after a tap), and snapshot lines are sorted so the
 > output is stable across runs.
+
+## State management in a medium or large project
+
+The executable [Flutter example](example/flutter_example) includes two levels:
+a minimal counter for a first approval test and an `orders` vertical slice that
+shows how approvals fit a feature-first application:
+
+```text
+lib/
+├── app.dart
+├── main.dart
+└── features/
+    ├── counter/presentation/
+    │   ├── counter_controller.dart
+    │   └── counter_page.dart
+    └── orders/
+        ├── domain/
+        │   ├── order.dart
+        │   ├── orders_load_exception.dart
+        │   └── orders_repository.dart
+        ├── data/demo_orders_repository.dart
+        └── presentation/
+            ├── orders_controller.dart
+            ├── orders_state.dart
+            ├── orders_screen.dart
+            └── orders_view.dart
+test/
+├── features/
+│   ├── counter/presentation/
+│   └── orders/
+│       ├── domain/order_test.dart
+│       └── presentation/
+│           ├── orders_controller_test.dart
+│           ├── orders_screen_test.dart
+│           └── orders_screen_test.*.approved.txt
+└── support/
+    ├── fake_orders_repository.dart
+    └── order_fixtures.dart
+```
+
+The orders presentation layer imports the domain repository interface, never
+the data implementation. `main.dart` is the composition root that connects
+them. Controller tests cover the `loading → loaded/failure` business flow,
+while widget approvals cover the three complex rendered states: loading,
+loaded, and failure.
+
+```dart
+expect(states, [isA<OrdersLoading>(), isA<OrdersLoaded>()]);
+
+await tester.pumpWidget(
+  ExampleApp(home: OrdersScreen(repository: repository)),
+);
+await tester.pumpAndSettle();
+await tester.approvalTest();
+```
+
+The empty result and retry interaction use focused `expect()` assertions rather
+than more snapshots. This keeps the approved set small as the application
+grows. The same repository boundary and screen/view split work with BLoC,
+Cubit, Riverpod, or Provider; only the state-holder implementation changes.
 
 ## 🧪 Snapshotting the accessibility tree
 
@@ -255,15 +327,6 @@ build-time step that checks in the generated name list, or a separate
 `analyzer` and `_fe_analyzer_shared` are the heaviest transitive dependencies
 this package brings in.
 
-## 📦 Installation
-
-Add the following to your `pubspec.yaml` file:
-
-```yaml
-    dependencies:
-      approval_tests_flutter: ^1.5.0
-    ```
-
 ## Coverage
 
 The 1.5.0 release has 100% line coverage for executable code under `lib`
@@ -274,12 +337,6 @@ To reproduce the report locally:
 ```shell
 flutter test --coverage
 ```
-
-## 👀 Getting Started
-
-The best way to get started is to download and open the example project:
-
-- [Flutter example project](https://github.com/approvals/ApprovalTests.Dart.Flutter/tree/main/example/flutter_example)
 
 ## 📚 How to use
 
@@ -342,7 +399,10 @@ or PowerShell profile
 
 #### • Via approveResult property
 
-If you want the result to be automatically saved after running the test, you need to use the `approveResult` property in `Options`:
+`approveResult` is a deliberate local migration tool for creating or replacing
+many baselines. Remove it immediately after reviewing the generated files. Do
+not enable it in normal tests or CI: automation should verify approved output,
+not silently replace it.
 
 ```dart
 void main() {
@@ -409,12 +469,12 @@ To use `DiffReporter` you just need to add it to `options`:
 
 ## 📝 Examples
 
-I have provided a couple of small examples here to show you how to use the package.
-There are more examples in the `example` folder for you to explore. I will add more examples in the future.
-Inside, in the `gilded_rose` folder, there is an example of using `ApprovalTests` to test the legacy code of [Gilded Rose kata](https://github.com/emilybache/GildedRose-Refactoring-Kata).
-You can study it to understand how to use the package to test complex code.
-
-And the `verify_methods` folder has small examples of using different `ApprovalTests` methods for different cases.
+The [Flutter example project](example/flutter_example) is executable and shows
+dependency-injected state management, snapshots before and after an
+interaction, focused assertions alongside approvals, feature-first folders,
+and committed baselines. The core
+[`approval_tests`](https://github.com/approvals/ApprovalTests.Dart) repository
+contains the JSON, query, sequence, and generated-text examples.
 
 ### JSON example
 
@@ -437,15 +497,7 @@ void main() {
   );
 
   test('verify model', () {
-    Approvals.verifyAsJson(
-      jsonItem,
-      options: const Options(
-        deleteReceivedFile:
-            true, // Automatically delete the received file after the test.
-        approveResult:
-            true, // Approve the result automatically. You can remove this property after the approved file is created.
-      ),
-    );
+    Approvals.verifyAsJson(jsonItem);
   });
 }
 ```
@@ -482,13 +534,60 @@ this will result in the following file
 
 <img src="https://github.com/yelmuratoff/packages_assets/blob/main/assets/approval_tests/passed.png?raw=true" alt="Passed test example" title="ApprovalTests" style="max-width: 800px;">
 
-## ❓ Which File Artifacts to Exclude from Source Control
+## Managing snapshots on a team
 
-You must add any `approved` files to your source control system. But `received` files can change with any run and should be ignored. For Git, add this to your `.gitignore`:
+Treat approval files like test code:
+
+| Artifact | Source control policy |
+| --- | --- |
+| `*.approved.txt` and approved `.png` goldens | Review and commit |
+| `*.received.*` | Inspect locally, never commit |
+| `**/.approval_tests/` | Ignore; this is a generated cache |
+
+Use this `.gitignore` baseline:
 
 ```gitignore
 *.received.*
+**/.approval_tests/
 ```
+
+For every snapshot change, reviewers should confirm that the diff expresses an
+intentional product change, contains no timestamps, random IDs, machine paths,
+or personal data, and stays small enough to understand. Prefer focused
+snapshots over one application-wide artifact.
+
+At scale, keep state transitions and business rules in fast unit tests. Approve
+only core rendered states, reuse scenario fakes or fixtures across the feature,
+and add theme, locale, or text-scale variants deliberately instead of
+multiplying every snapshot by every possible combination.
+
+CI must never run with `approveResult: true` or `--update-goldens`. Because the
+default first-run workflow creates a missing approved file, CI should also fail
+when tests leave an untracked or modified `*.approved.*` artifact. This catches
+a deleted or forgotten baseline instead of accepting it silently.
+
+Use a version-independent guard after the test step:
+
+```yaml
+- name: Verify approval baselines
+  run: |
+    git diff --exit-code -- '*.approved.*'
+    test -z "$(git ls-files --others --exclude-standard -- '*.approved.*')"
+```
+
+Projects that resolve `approval_tests` 1.7.0 or newer can additionally make
+missing baselines fail at verification time:
+
+```dart
+await tester.approvalTest(
+  options: const Options(
+    missingApprovedPolicy: MissingApprovedPolicy.writeReceivedAndFail,
+  ),
+);
+```
+
+Keep the Git guard as well: strict verification catches a missing baseline,
+while Git catches an intentionally or accidentally changed one.
 
 ## ✉️ For More Information
 
