@@ -1,4 +1,4 @@
-## 1.5.0
+## 1.5.1
 
 ### Documentation
 
@@ -9,6 +9,8 @@
   dependency-injected state management, typed failures, loading/loaded/error
   approvals, focused retry and empty-state assertions, and repository lifecycle
   changes.
+
+## 1.5.0
 
 ### Fixed
 

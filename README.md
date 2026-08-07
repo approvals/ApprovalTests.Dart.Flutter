@@ -64,7 +64,7 @@ ApprovalTests is designed for two level: Dart and Flutter. <br>
 
    ```yaml
    dev_dependencies:
-     approval_tests_flutter: ^1.5.0
+     approval_tests_flutter: ^1.5.1
    ```
 
 2. Ignore disposable output, but keep approved baselines in Git:
@@ -329,7 +329,7 @@ this package brings in.
 
 ## Coverage
 
-The 1.5.0 release has 100% line coverage for executable code under `lib`
+The 1.5.1 release has 100% line coverage for executable code under `lib`
 (594/594 lines). The full suite passes all 100 test executions.
 
 To reproduce the report locally:
