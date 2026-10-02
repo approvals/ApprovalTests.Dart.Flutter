@@ -1,3 +1,11 @@
+## 1.5.2
+
+### Added
+
+- Bundled the `approval-tests-flutter-widget-testing` consumer skill with
+  widget, semantics, and golden examples, capture setup, and baseline review.
+- Documented skill installation with `dart run skills@ get`.
+
 ## 1.5.1
 
 ### Documentation

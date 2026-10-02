@@ -58,13 +58,28 @@ ApprovalTests is designed for two level: Dart and Flutter. <br>
 | [approval_tests](https://github.com/approvals/ApprovalTests.Dart)                                  | [![Pub](https://img.shields.io/pub/v/approval_tests.svg?style=flat-square)](https://pub.dev/packages/approval_tests) | **Dart** package for approval testing of `unit` tests _(main)_            |
 | [approval_tests_flutter](https://github.com/approvals/ApprovalTests.Dart.Flutter)                   | [![Pub](https://img.shields.io/pub/v/approval_tests_flutter.svg)](https://pub.dev/packages/approval_tests_flutter)   | **Flutter** package for approval testing of `widget`, `integration` tests |
 
+## AI agent skill
+
+The package includes
+[approval-tests-flutter-widget-testing](skills/approval-tests-flutter-widget-testing/SKILL.md)
+for agents writing widget, semantics, and golden approval tests. From a consumer
+project that depends on this package, install it with the
+[Dart package skills tool](https://dart.dev/ai/package-skills):
+
+```sh
+dart run skills@ get -p approval_tests_flutter
+```
+
+Use `dart run skills@ get` to discover skills from all direct dependencies.
+The skill ships in the package's `skills/` directory.
+
 ## First Flutter approval test
 
 1. Add the package to `dev_dependencies` because it is used from tests:
 
    ```yaml
    dev_dependencies:
-     approval_tests_flutter: ^1.5.1
+     approval_tests_flutter: ^1.5.2
    ```
 
 2. Ignore disposable output, but keep approved baselines in Git:
@@ -329,7 +344,7 @@ this package brings in.
 
 ## Coverage
 
-The 1.5.1 release has 100% line coverage for executable code under `lib`
+The 1.5.2 release has 100% line coverage for executable code under `lib`
 (594/594 lines). The full suite passes all 100 test executions.
 
 To reproduce the report locally:
