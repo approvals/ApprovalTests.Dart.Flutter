@@ -1,16 +1,15 @@
 # ApprovalTests.Dart.Flutter Roadmap
 
-Last updated: 2026-07-26
+Last updated: 2026-10-25
 
 Current baseline:
 
 - latest published package:
-  [`approval_tests_flutter 1.3.1`](https://pub.dev/packages/approval_tests_flutter);
-- repository baseline: `refactor/approval-experience` at `c5cd700`, with the
-  1.5.0 delivery slices completed in the current working tree;
-- current package version: `1.5.0`;
-- current core constraint: `approval_tests: ^1.3.6`, while the published core
-  package is `1.4.3`;
+  [`approval_tests_flutter 1.5.2`](https://pub.dev/packages/approval_tests_flutter);
+- repository baseline: `main`, with release tag `v1.5.2` at `9ec06ed`;
+- current package version: `1.5.2`;
+- current core constraint: `approval_tests: ^1.3.6`, which resolves up to the
+  published core `1.7.2`; the committed lockfile pins `1.4.3`;
 - version 1.4.1 adds `WidgetActionPumpPolicy` with explicit no-pump,
   single-frame, fixed-duration, and bounded-settling behavior for `tapWidget()`
   while keeping the 1.x default source compatible;
@@ -18,6 +17,9 @@ Current baseline:
   by fingerprint, fixes an `ArgumentError` on Windows caused by unnormalized
   analyzer paths, and moves capture state into an explicit session with an
   optional `ApprovalWidgets.tearDownAll()`;
+- version 1.5.1 reworks the package guide and the executable example;
+- version 1.5.2 bundles the `approval-tests-flutter-widget-testing` consumer
+  agent skill;
 - `analyzer` is a runtime dependency because `ApprovalWidgets.setUpAll()`
   currently parses the consuming project's `lib/` sources at test runtime;
 - compatibility policy: existing text snapshots and golden names remain stable
@@ -95,13 +97,15 @@ framework, state-management layer, router, or localization solution.
       nested Flutter process.
 - [x] Regression coverage for widget-name loading, key parsing, metadata value
       equality, snapshot completeness, ordering, and semantics output.
+- [x] Bundled `approval-tests-flutter-widget-testing` consumer agent skill,
+      installable with `dart run skills@ get`.
 
 ## Milestone 0 — Safe 1.x maintenance
 
 ### Dependency and release alignment — P0
 
 - [ ] Verify whether `approval_tests 1.3.6` actually supports every current
-      Flutter API; `^1.3.6` already permits Pub to resolve `1.4.3`.
+      Flutter API; `^1.3.6` already permits Pub to resolve `1.7.2`.
 - [ ] Keep `1.3.6` as the minimum when tests prove compatibility; raise it only
       when Flutter starts consuming a newer core API.
 - [ ] Test both the declared lower bound and the latest compatible core release
@@ -109,8 +113,9 @@ framework, state-management layer, router, or localization solution.
 - [ ] Record the exact minimum core version required by each Flutter feature.
 - [ ] Keep Flutter and core CHANGELOG entries linked whenever a behavior spans
       both repositories.
-- [ ] Merge and release from a branch whose history contains the published
-      `1.3.1` source and tag; create the `1.4.1` tag only after publication.
+- [ ] Merge and release from a branch whose history contains every published
+      version, and create each tag only after publication. Only `v1.5.1` and
+      `v1.5.2` are tagged; 1.0.0 through 1.5.0 were published without tags.
 - [ ] If Flutter raises its minimum core version to the release containing the
       `ispectify` migration, raise the Flutter package's Dart SDK floor to 3.6
       in the same release and test that lower bound explicitly.
@@ -130,7 +135,7 @@ behavior immediately would be a breaking change, so migration must be additive.
 
 ### Capture-state isolation — P0
 
-Status: complete for the 1.5.0 development tree.
+Status: released in 1.5.0.
 
 - [x] Move registered widget names/types, previous metadata, previous generated
       expectations, and localization lookup state into an explicit test session.
@@ -169,7 +174,7 @@ survives.
 
 ### Widget-name discovery and cache safety — P0
 
-Status: complete for the 1.5.0 development tree.
+Status: released in 1.5.0.
 
 - [x] Replace synchronous directory enumeration and cache writes inside async
       setup with consistently awaited filesystem operations.
@@ -281,8 +286,9 @@ waits forever for an indeterminate animation.
 - [ ] Document fonts and golden-test requirements for local machines and CI.
 - [ ] Explain when to choose widget metadata, semantics, a golden image, or a
       combination of them.
-- [ ] Adopt the core explicit approval context when available so Flutter
-      captures do not require stack-trace parsing for source paths and test names.
+- [ ] Adopt the core explicit approval context, available since core 1.7.0, so
+      Flutter captures do not require stack-trace parsing for source paths and
+      test names.
 - [ ] Keep current artifact names stable while the explicit-context API is
       introduced.
 
@@ -456,7 +462,7 @@ Acceptance criteria:
 - [ ] Document how stale-approval checks work with Flutter test filtering,
       shards, golden variants, and multi-artifact frames.
 - [ ] Document font installation and rendering constraints.
-- [ ] Keep approval explicit; CI does not update goldens automatically.
+- [x] Keep approval explicit; CI does not update goldens automatically.
 
 ### Performance and compatibility
 
@@ -466,7 +472,7 @@ Acceptance criteria:
 - [ ] Test supported Flutter versions against the pinned analyzer range.
 - [ ] Add compatibility checks before raising the minimum Flutter or analyzer
       version.
-- [ ] Keep package startup free of nested `flutter` subprocesses.
+- [x] Keep package startup free of nested `flutter` subprocesses.
 
 ### Release coordination
 
@@ -537,9 +543,9 @@ dependency.
 | Order | Deliverable                                        | Primary files                                                                                                              | Focused verification                                             |
 | ----- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 1     | Lower-bound/latest core compatibility matrix       | `pubspec.yaml`, CI workflows, `CHANGELOG.md`                                                                               | `flutter pub get`, `flutter analyze`, `flutter test`             |
-| 2     | Explicit tap/pump actions (complete)               | `lib/src/widget_meta/widget_tester_extension.dart`, `test/widget_meta/widget_tester_extension_test.dart`                   | `flutter test test/widget_meta/widget_tester_extension_test.dart` |
-| 3     | Isolated capture session                           | `lib/src/approval_session.dart`, `lib/src/src.dart`, `lib/src/widget_meta/collect_widgets_meta_data.dart`, isolation tests | focused regression test, then full suite                         |
-| 4     | Awaited and atomic widget-name cache               | `lib/src/get_widget_names.dart`, cache tests                                                                               | `flutter test test/approval_tests_flutter_regressions_test.dart` |
+| 2     | Explicit tap/pump actions (released in 1.4.1)      | `lib/src/widget_meta/widget_tester_extension.dart`, `test/widget_meta/widget_tester_extension_test.dart`                   | `flutter test test/widget_meta/widget_tester_extension_test.dart` |
+| 3     | Isolated capture session (released in 1.5.0)       | `lib/src/approval_session.dart`, `lib/src/src.dart`, `lib/src/widget_meta/collect_widgets_meta_data.dart`, isolation tests | focused regression test, then full suite                         |
+| 4     | Awaited and atomic widget-name cache (released in 1.5.0) | `lib/src/get_widget_names.dart`, cache tests                                                                               | `flutter test test/approval_tests_flutter_regressions_test.dart` |
 | 5     | Immutable approval environment and restore harness | `lib/src/environment/`, environment tests                                                                                  | `flutter test test/environment_test.dart`                        |
 | 6     | Core `ApprovalContext` adoption                    | `lib/src/src.dart`, naming tests                                                                                           | `flutter test test/approval_context_test.dart`                   |
 | 7     | Golden variant model and comparator restoration    | `lib/src/goldens/`, golden matrix tests                                                                                    | `flutter test test/golden_matrix_test.dart`                      |
@@ -603,17 +609,17 @@ Every roadmap item must meet the following gates before release:
 
 The following Flutter milestones should reuse core work:
 
-| Flutter capability               | Core prerequisite                            |
-| -------------------------------- | -------------------------------------------- |
-| Image-aware reporter selection   | Artifact-aware reporters                     |
-| Mixed text and image stories     | Async multi-artifact and converter pipeline  |
-| Pairwise golden matrices         | Best-covering-pairs engine                   |
-| Interaction stories              | Core storyboard model                        |
-| Explicit test naming             | Core `ApprovalContext` and test adapter      |
-| CI mismatch collection           | Typed failures and machine-readable manifest |
-| Stale golden detection           | Core stale-approval checks                   |
-| Runtime identifier normalization | Alias-preserving scrubbers                   |
-| Scoped Flutter defaults          | Async-safe scoped `Options` foundation       |
+| Flutter capability               | Core prerequisite                            | Core status                                     |
+| -------------------------------- | -------------------------------------------- | ----------------------------------------------- |
+| Image-aware reporter selection   | Artifact-aware reporters                     | planned                                         |
+| Mixed text and image stories     | Async multi-artifact and converter pipeline  | planned                                         |
+| Pairwise golden matrices         | Best-covering-pairs engine                   | planned                                         |
+| Interaction stories              | Core storyboard model                        | planned                                         |
+| Explicit test naming             | Core `ApprovalContext` and test adapter      | released in 1.7.0                               |
+| CI mismatch collection           | Typed failures and machine-readable manifest | typed mismatch kinds in 1.5.0; manifest planned |
+| Stale golden detection           | Core stale-approval checks                   | planned                                         |
+| Runtime identifier normalization | Alias-preserving scrubbers                   | released in 1.6.0                               |
+| Scoped Flutter defaults          | Async-safe scoped `Options` foundation       | planned                                         |
 
 ## Prior art
 
