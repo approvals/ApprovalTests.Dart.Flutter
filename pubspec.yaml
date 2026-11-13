@@ -13,6 +13,10 @@ topics:
   - tests
   - approval-tests
 
+screenshots:
+  - description: "A received file diffed against the approved one, and the line ApprovalTests prints when a test passes."
+    path: assets/screenshots/banner.webp
+
 platforms:
   android:
   ios:
